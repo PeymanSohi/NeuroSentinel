@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  server:
+    build: ./server
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/neurosentinel
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - nsnet
+
+  ml_core:
+    build: ./ml_core
+    networks:
+      - nsnet
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "5173:5173"
+    networks:
+      - nsnet
+
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: neurosentinel
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - nsnet
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - nsnet
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - nsnet
+
+networks:
+  nsnet:
+    driver: bridge
+
+volumes:
+  pgdata:

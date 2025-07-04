@@ -1,4 +1,3 @@
-
 # 🧠 NeuroSentinel  
 ### Powered by AI, LLMs, Federated Learning, Threat Intelligence, and Forensics
 
@@ -120,7 +119,7 @@ This project is released under the MIT License. Contributions are welcome.
 
 This project was designed and developed by PeymanSohi, a DevOps & Python Engineer passionate about AI, cybersecurity, and building resilient distributed systems.
 
-> *“Security is not just a feature — it’s a self-adaptive, intelligent organism in the modern cloud era.”*
+> *"Security is not just a feature — it's a self-adaptive, intelligent organism in the modern cloud era."*
 
 
 ---
@@ -144,4 +143,20 @@ See the [LICENSE](LICENSE) file for full details.
 
 This project is licensed under the **Apache License 2.0**.  
 See the [LICENSE](LICENSE) file for full license text.
+
+## Project Overview
+A smart, distributed cyber defense platform that learns system behaviors, detects and predicts threats, and responds autonomously when needed. It uses collaborative learning, large language models (LLMs), forensic analysis, and threat intelligence APIs to enhance its defense power.
+
+## Directory Structure
+
+- `agent/` — Distributed agent node (collects, monitors, reports)
+- `server/` — Central FastAPI server (API, aggregation, orchestration)
+- `ml_core/` — ML engine (anomaly detection, federated learning)
+- `llm_core/` — LLM-based log analysis, summarization, reporting
+- `forensics/` — Forensic snapshot and analysis tools
+- `threat_api/` — Threat intelligence API integrations
+- `dashboard/` — Frontend dashboard (React/Vite)
+- `shared/` — Shared code (schemas, utils, config)
+
+See module READMEs for more details.
 
