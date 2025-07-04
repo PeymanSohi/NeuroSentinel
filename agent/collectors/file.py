@@ -100,3 +100,5 @@ def collect_file_events(yara_rules_path=None):
     # Suspicious files
     result["suspicious_files"] = find_suspicious_files()
     return result
+
+    
