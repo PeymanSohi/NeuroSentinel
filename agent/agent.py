@@ -10,7 +10,7 @@ import grp
 from datetime import datetime
 import asyncio
 import json
-from agent.collectors import system, process, network, file, user, logs, persistence, firewall, container, cloud, threat_intel, integrity, security_tools
+from collectors import system, process, network, file, user, logs, persistence, firewall, container, cloud, threat_intel, integrity, security_tools
 
 try:
     from watchdog.observers import Observer
