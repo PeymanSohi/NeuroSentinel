@@ -1,6 +1,69 @@
+import os
+import glob
+import subprocess
+from datetime import datetime
+
+LOG_DIRS = ["/var/log"]
+LOG_EXTENSIONS = [".log", ".err", ".out", ".journal"]
+MAX_LINES = 200  # Number of lines to collect per log file
+
+
+def collect_journalctl_logs(lines=200):
+    """
+    Collect the last N lines from systemd journal (if available).
+    """
+    try:
+        output = subprocess.check_output([
+            'journalctl', '-n', str(lines), '--no-pager', '--output', 'short-iso'
+        ], text=True)
+        return {"journalctl": output}
+    except Exception as e:
+        return {"journalctl_error": str(e)}
+
+
+def collect_log_files(log_dirs=LOG_DIRS, extensions=LOG_EXTENSIONS, max_lines=MAX_LINES):
+    """
+    Collect the last N lines from all log files in specified directories.
+    """
+    logs = {}
+    for log_dir in log_dirs:
+        for ext in extensions:
+            pattern = os.path.join(log_dir, f"*{ext}")
+            for log_file in glob.glob(pattern):
+                try:
+                    with open(log_file, 'r', errors='ignore') as f:
+                        lines = f.readlines()[-max_lines:]
+                        logs[log_file] = ''.join(lines)
+                except Exception as e:
+                    logs[log_file] = f"error: {e}"
+    return logs
+
+
+def collect_service_logs(services=None, lines=100):
+    """
+    Collect logs for specific services using journalctl (if available).
+    """
+    if services is None:
+        services = ["sshd", "nginx", "docker", "postgresql", "redis"]
+    service_logs = {}
+    for svc in services:
+        try:
+            output = subprocess.check_output([
+                'journalctl', '-u', svc, '-n', str(lines), '--no-pager', '--output', 'short-iso'
+            ], text=True)
+            service_logs[svc] = output
+        except Exception as e:
+            service_logs[svc] = f"error: {e}"
+    return service_logs
+
+
 def collect_system_logs():
     """
-    Collect syslog, auth.log, dmesg, auditd, SELinux/AppArmor logs.
+    Collect system logs: journalctl, /var/log/* files, and key service logs.
     Returns a dict.
     """
-    return {}
+    result = {"timestamp": datetime.utcnow().isoformat()}
+    result.update(collect_journalctl_logs())
+    result["log_files"] = collect_log_files()
+    result["service_logs"] = collect_service_logs()
+    return result

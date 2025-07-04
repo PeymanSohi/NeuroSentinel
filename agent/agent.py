@@ -8,17 +8,25 @@ import hashlib
 import pwd
 import grp
 from datetime import datetime
+import asyncio
+import json
 
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
     WATCHDOG_AVAILABLE = True
+    import websockets
+    WEBSOCKETS_AVAILABLE = True
 except ImportError:
     WATCHDOG_AVAILABLE = False
+    WEBSOCKETS_AVAILABLE = False
 
 SERVER_URL = os.getenv("SERVER_URL", "http://server:8000/events")
 AGENT_ID = socket.gethostname()
 INTERVAL = int(os.getenv("AGENT_INTERVAL", 10))  # seconds
+
+SEND_MODE = os.getenv("SEND_MODE", "rest").lower()  # 'rest' or 'websocket'
+WS_URL = os.getenv("WS_URL", "ws://server:8000/ws/events")
 
 # --- File System Monitoring (Watchdog) ---
 file_events = []
@@ -122,69 +130,55 @@ def get_os_info():
         "python_version": platform.python_version()
     }
 
-def collect_event():
-    """
-    Collect advanced system, process, network, file, user, and environment data.
-    """
-    try:
-        cpu_percent = psutil.cpu_percent(interval=1)
-        mem = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
-        net = psutil.net_io_counters()
-        users, groups = get_users_groups()
-        event = {
-            "agent_id": AGENT_ID,
-            "event_type": "advanced_system_stats",
-            "timestamp": time.time(),
-            "data": {
-                "system": {
-                    "cpu_percent": cpu_percent,
-                    "mem_total": mem.total,
-                    "mem_used": mem.used,
-                    "mem_percent": mem.percent,
-                    "disk_total": disk.total,
-                    "disk_used": disk.used,
-                    "disk_percent": disk.percent,
-                    "uptime": time.time() - psutil.boot_time(),
-                    "os_info": get_os_info(),
-                },
-                "processes": get_processes(),
-                "network": {
-                    "connections": get_network_connections(),
-                    "net_bytes_sent": net.bytes_sent,
-                    "net_bytes_recv": net.bytes_recv,
-                },
-                "users": {
-                    "logged_in": get_logged_in_users(),
-                    "all_users": users,
-                    "groups": groups,
-                },
-                "cron_jobs": get_cron_jobs(),
-                "services": get_services(),
-                "firewall_rules": get_firewall_rules(),
-                "file_events": list(file_events),
-            }
-        }
-        # Clear file events after reporting
-        file_events.clear()
-        return event
-    except Exception as e:
-        return {"agent_id": AGENT_ID, "event_type": "error", "timestamp": time.time(), "data": {"error": str(e)}}
+def collect_all_data():
+    data = {
+        "agent_id": AGENT_ID,
+        "timestamp": time.time(),
+        "system": system.collect_system_metrics(),
+        "process": process.collect_process_info(),
+        "network": network.collect_network_info(),
+        "file": file.collect_file_events(),
+        "user": user.collect_user_activity(),
+        "logs": logs.collect_system_logs(),
+        "persistence": persistence.collect_persistence_info(),
+        "firewall": firewall.collect_firewall_rules(),
+        "container": container.collect_container_info(),
+        "cloud": cloud.collect_cloud_info(),
+        "threat_intel": threat_intel.enrich_with_threat_intel({}),  # Pass relevant data as needed
+        "integrity": integrity.check_agent_integrity(),
+        "security_tools": security_tools.collect_security_tools_status(),
+    }
+    return data
 
-def report_event(event):
+def send_event_rest(event):
     try:
         response = requests.post(SERVER_URL, json=event, timeout=10)
-        print(f"[INFO] Event reported: {response.status_code} {response.text}")
+        print(f"[INFO] Event reported via REST: {response.status_code} {response.text}")
     except Exception as e:
-        print(f"[ERROR] Failed to report event: {e}")
+        print(f"[ERROR] Failed to report event via REST: {e}")
+
+async def send_event_ws(event):
+    if not WEBSOCKETS_AVAILABLE:
+        print("[ERROR] websockets library not installed. Cannot send via WebSocket.")
+        return
+    try:
+        async with websockets.connect(WS_URL) as ws:
+            await ws.send(json.dumps(event))
+            ack = await ws.recv()
+            print(f"[INFO] Event reported via WebSocket: {ack}")
+    except Exception as e:
+        print(f"[ERROR] Failed to report event via WebSocket: {e}")
 
 def main():
-    print(f"Starting advanced agent {AGENT_ID}, reporting to {SERVER_URL} every {INTERVAL}s...")
+    print(f"Starting agent {AGENT_ID}, reporting to {SERVER_URL} every {INTERVAL}s using {SEND_MODE.upper()}...")
     observer = start_file_monitor("/etc") if WATCHDOG_AVAILABLE else None
     try:
         while True:
-            event = collect_event()
-            report_event(event)
+            event = collect_all_data()
+            if SEND_MODE == "websocket":
+                asyncio.run(send_event_ws(event))
+            else:
+                send_event_rest(event)
             time.sleep(INTERVAL)
     except KeyboardInterrupt:
         if observer:
