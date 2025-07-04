@@ -1,0 +1,129 @@
+[
+  {
+    "agent_id": "validation_agent_001",
+    "timestamp": 1640995320,
+    "system": {
+      "cpu_percent": 85.5,
+      "memory_percent": 92.1,
+      "disk_usage_percent": 95.2,
+      "load_average": [8.5, 7.2, 6.1],
+      "boot_time": 1640990000
+    },
+    "process": {
+      "processes": [
+        {
+          "pid": 1234,
+          "name": "systemd",
+          "cpu_percent": 0.1,
+          "memory_percent": 0.5
+        },
+        {
+          "pid": 9999,
+          "name": "suspicious_process",
+          "cpu_percent": 75.2,
+          "memory_percent": 45.8
+        }
+      ]
+    },
+    "network": {
+      "connections": [
+        {
+          "status": "ESTABLISHED",
+          "raddr": {"ip": "192.168.1.100"}
+        },
+        {
+          "status": "ESTABLISHED",
+          "raddr": {"ip": "185.220.101.45"}
+        }
+      ]
+    },
+    "file": {
+      "events": [
+        {
+          "event_type": "created",
+          "src_path": "/tmp/suspicious_file.sh"
+        },
+        {
+          "event_type": "modified",
+          "src_path": "/etc/passwd"
+        }
+      ]
+    },
+    "user": {
+      "logged_in_users": ["admin", "unknown_user"],
+      "users": ["admin", "user1", "user2"],
+      "groups": ["admin", "users"]
+    },
+    "security_tools": {
+      "antivirus_status": {"running": false},
+      "firewall_rules": ["rule1"],
+      "ids_alerts": ["suspicious_connection", "file_modification"],
+      "pending_updates": ["critical_security_patch"]
+    },
+    "container": {
+      "running_containers": [],
+      "all_containers": []
+    },
+    "threat_intel": {
+      "indicators": ["185.220.101.45"],
+      "malware_detections": ["suspicious_process"]
+    }
+  },
+  {
+    "agent_id": "validation_agent_002",
+    "timestamp": 1640995380,
+    "system": {
+      "cpu_percent": 22.1,
+      "memory_percent": 48.5,
+      "disk_usage_percent": 69.2,
+      "load_average": [1.1, 1.0, 0.8],
+      "boot_time": 1640990000
+    },
+    "process": {
+      "processes": [
+        {
+          "pid": 1234,
+          "name": "systemd",
+          "cpu_percent": 0.1,
+          "memory_percent": 0.5
+        },
+        {
+          "pid": 1237,
+          "name": "nginx",
+          "cpu_percent": 1.8,
+          "memory_percent": 1.0
+        }
+      ]
+    },
+    "network": {
+      "connections": [
+        {
+          "status": "ESTABLISHED",
+          "raddr": {"ip": "192.168.1.102"}
+        }
+      ]
+    },
+    "file": {
+      "events": []
+    },
+    "user": {
+      "logged_in_users": ["admin"],
+      "users": ["admin", "user1", "user2"],
+      "groups": ["admin", "users"]
+    },
+    "security_tools": {
+      "antivirus_status": {"running": true},
+      "firewall_rules": ["rule1", "rule2", "rule3"],
+      "ids_alerts": [],
+      "pending_updates": []
+    },
+    "container": {
+      "running_containers": [],
+      "all_containers": []
+    },
+    "threat_intel": {
+      "indicators": [],
+      "malware_detections": []
+    }
+  }
+] 

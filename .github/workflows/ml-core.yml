@@ -1,0 +1,126 @@
+name: ML Core CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths: [ 'ml_core/**', 'data/**', 'docker-compose.yml' ]
+  pull_request:
+    branches: [ main ]
+    paths: [ 'ml_core/**', 'data/**', 'docker-compose.yml' ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test ML Core
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('ml_core/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r ml_core/requirements.txt
+    
+    - name: Run tests
+      run: |
+        cd ml_core
+        python test_models.py
+    
+    - name: Validate data format
+      run: |
+        python -c "import json; json.load(open('data/processed/training_data.json')); print('✓ Training data is valid')"
+        python -c "import json; json.load(open('data/processed/validation_data.json')); print('✓ Validation data is valid')"
+    
+    - name: Validate config files
+      run: |
+        python -c "import json; json.load(open('data/configs/isolation_forest_config.json')); print('✓ IsolationForest config is valid')"
+        python -c "import json; json.load(open('data/configs/autoencoder_config.json')); print('✓ AutoEncoder config is valid')"
+
+  build-and-test-docker:
+    runs-on: ubuntu-latest
+    name: Build and Test Docker
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build ML Core image
+      run: |
+        docker build -t neurosentinel-ml-core ./ml_core
+    
+    - name: Test ML Core container
+      run: |
+        docker run --rm neurosentinel-ml-core python test_models.py
+    
+    - name: Test training script
+      run: |
+        docker run --rm -v $(pwd)/data:/data -v $(pwd)/models:/app/models neurosentinel-ml-core \
+          python train_models.py \
+          --data /data/processed/training_data.json \
+          --model-type isolation_forest \
+          --experiment-name ci_test
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Bandit security scan
+      run: |
+        pip install bandit
+        bandit -r ml_core/ -f json -o bandit-report.json || true
+    
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-scan-results
+        path: bandit-report.json
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    name: Deploy to Staging
+    if: github.ref == 'refs/heads/develop'
+    needs: [test, build-and-test-docker]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to staging environment
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your staging deployment commands here
+        # Example: docker-compose -f docker-compose.staging.yml up -d
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    name: Deploy to Production
+    if: github.ref == 'refs/heads/main'
+    needs: [test, build-and-test-docker]
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to production environment
+      run: |
+        echo "Deploying to production environment..."
+        # Add your production deployment commands here
+        # Example: docker-compose -f docker-compose.prod.yml up -d 

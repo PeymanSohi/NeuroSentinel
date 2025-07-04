@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   server:
     build: ./server
@@ -21,12 +23,39 @@ services:
       - WS_URL=ws://server:8000/ws/events
     networks:
       - nsnet
+
   ml_core:
-    build: ./ml_core
+    build:
+      context: ./ml_core
+    image: neurosentinel-ml-core
+    volumes:
+      - ./ml_core:/app
+      - ./data:/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9000"]
     ports:
       - "9000:9000"
-    networks:
-      - nsnet
+
+  ml_core_test:
+    build:
+      context: ./ml_core
+    image: neurosentinel-ml-core
+    command: ["python", "test_models.py"]
+    volumes:
+      - ./ml_core:/app
+
+  ml_core_train:
+    build:
+      context: ./ml_core
+    image: neurosentinel-ml-core
+    command: ["python", "train_models.py", "--data", "/data/processed/training_data.json", "--validation", "/data/processed/validation_data.json", "--model-type", "isolation_forest", "--config", "/data/configs/isolation_forest_config.json"]
+    volumes:
+      - ./ml_core:/app
+      - ./data:/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+
   dashboard:
     build: ./dashboard
     ports:

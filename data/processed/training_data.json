@@ -1,0 +1,135 @@
+[
+  {
+    "agent_id": "training_agent_001",
+    "timestamp": 1640995200,
+    "system": {
+      "cpu_percent": 25.5,
+      "memory_percent": 45.2,
+      "disk_usage_percent": 67.8,
+      "load_average": [1.2, 1.1, 0.9],
+      "boot_time": 1640990000
+    },
+    "process": {
+      "processes": [
+        {
+          "pid": 1234,
+          "name": "systemd",
+          "cpu_percent": 0.1,
+          "memory_percent": 0.5
+        },
+        {
+          "pid": 1235,
+          "name": "sshd",
+          "cpu_percent": 0.2,
+          "memory_percent": 0.8
+        }
+      ]
+    },
+    "network": {
+      "connections": [
+        {
+          "status": "ESTABLISHED",
+          "raddr": {"ip": "192.168.1.100"}
+        },
+        {
+          "status": "LISTEN",
+          "raddr": null
+        }
+      ]
+    },
+    "file": {
+      "events": []
+    },
+    "user": {
+      "logged_in_users": ["admin"],
+      "users": ["admin", "user1", "user2"],
+      "groups": ["admin", "users"]
+    },
+    "security_tools": {
+      "antivirus_status": {"running": true},
+      "firewall_rules": ["rule1", "rule2", "rule3"],
+      "ids_alerts": [],
+      "pending_updates": []
+    },
+    "container": {
+      "running_containers": [],
+      "all_containers": []
+    },
+    "threat_intel": {
+      "indicators": [],
+      "malware_detections": []
+    }
+  },
+  {
+    "agent_id": "training_agent_002",
+    "timestamp": 1640995260,
+    "system": {
+      "cpu_percent": 30.2,
+      "memory_percent": 52.1,
+      "disk_usage_percent": 68.1,
+      "load_average": [1.3, 1.2, 1.0],
+      "boot_time": 1640990000
+    },
+    "process": {
+      "processes": [
+        {
+          "pid": 1234,
+          "name": "systemd",
+          "cpu_percent": 0.1,
+          "memory_percent": 0.5
+        },
+        {
+          "pid": 1236,
+          "name": "nginx",
+          "cpu_percent": 2.1,
+          "memory_percent": 1.2
+        }
+      ]
+    },
+    "network": {
+      "connections": [
+        {
+          "status": "ESTABLISHED",
+          "raddr": {"ip": "192.168.1.101"}
+        },
+        {
+          "status": "ESTABLISHED",
+          "raddr": {"ip": "10.0.0.50"}
+        }
+      ]
+    },
+    "file": {
+      "events": [
+        {
+          "event_type": "modified",
+          "src_path": "/var/log/nginx/access.log"
+        }
+      ]
+    },
+    "user": {
+      "logged_in_users": ["admin", "user1"],
+      "users": ["admin", "user1", "user2"],
+      "groups": ["admin", "users"]
+    },
+    "security_tools": {
+      "antivirus_status": {"running": true},
+      "firewall_rules": ["rule1", "rule2", "rule3", "rule4"],
+      "ids_alerts": [],
+      "pending_updates": []
+    },
+    "container": {
+      "running_containers": [
+        {
+          "name": "web_app",
+          "cpu_percent": 5.2,
+          "memory_percent": 8.1
+        }
+      ],
+      "all_containers": []
+    },
+    "threat_intel": {
+      "indicators": [],
+      "malware_detections": []
+    }
+  }
+] 
