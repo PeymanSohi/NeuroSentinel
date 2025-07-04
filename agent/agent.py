@@ -17,7 +17,13 @@ try:
 except ImportError:
     WEBSOCKETS_AVAILABLE = False
 
-from config import SERVER_URL, AGENT_ID, INTERVAL
+try:
+    from watchdog.observers import Observer
+    WATCHDOG_AVAILABLE = True
+except ImportError:
+    WATCHDOG_AVAILABLE = False
+
+from config import SERVER_URL, AGENT_ID, INTERVAL, SEND_MODE, WS_URL
 from collectors import system, process, network, file, user, logs, persistence, firewall, container, cloud, threat_intel, integrity, security_tools
 
 # --- File System Monitoring (Watchdog) ---
@@ -33,7 +39,8 @@ class FileChangeHandler:
         })
 
 def start_file_monitor(path="/etc"):
-    if not WEBSOCKETS_AVAILABLE:
+    if not WATCHDOG_AVAILABLE:
+        print("[WARNING] watchdog library not installed. File monitoring disabled.")
         return None
     observer = Observer()
     handler = FileChangeHandler()
@@ -163,7 +170,7 @@ async def send_event_ws(event):
 
 def main():
     print(f"Starting agent {AGENT_ID}, reporting to {SERVER_URL} every {INTERVAL}s using {SEND_MODE.upper()}...")
-    observer = start_file_monitor("/etc") if WEBSOCKETS_AVAILABLE else None
+    observer = start_file_monitor("/etc") if WATCHDOG_AVAILABLE else None
     try:
         while True:
             event = collect_all_data()
