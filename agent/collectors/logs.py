@@ -63,7 +63,19 @@ def collect_system_logs():
     Returns a dict.
     """
     result = {"timestamp": datetime.utcnow().isoformat()}
-    result.update(collect_journalctl_logs())
-    result["log_files"] = collect_log_files()
-    result["service_logs"] = collect_service_logs()
+    try:
+        result.update(collect_journalctl_logs())
+    except Exception as e:
+        result["journalctl_error"] = str(e)
+    
+    try:
+        result["log_files"] = collect_log_files()
+    except Exception as e:
+        result["log_files_error"] = str(e)
+    
+    try:
+        result["service_logs"] = collect_service_logs()
+    except Exception as e:
+        result["service_logs_error"] = str(e)
+    
     return result
