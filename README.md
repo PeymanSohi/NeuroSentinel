@@ -450,40 +450,13 @@ docker volume prune
 
 ---
 
-## 📜 License
-
-This project is released under the MIT License. Contributions are welcome.
-
----
-
 ## 🙋 About the Author
 
 This project was designed and developed by PeymanSohi, a DevOps & Python Engineer passionate about AI, cybersecurity, and building resilient distributed systems.
 
 > *"Security is not just a feature — it's a self-adaptive, intelligent organism in the modern cloud era."*
 
-
 ---
-
-## 📝 License
-
-This project is licensed under the **Apache License 2.0**.  
-See the [LICENSE](LICENSE) file for full details.
-
-- ✅ Free for commercial use  
-- ✅ Open to contributions and forks  
-- ✅ Includes patent grant protection  
-- ✅ Requires proper attribution
-
-> By using this project, you agree not to use it for malicious or unethical purposes.
-
-
----
-
-## 📝 License
-
-This project is licensed under the **Apache License 2.0**.  
-See the [LICENSE](LICENSE) file for full license text.
 
 ## Project Overview
 A smart, distributed cyber defense platform that learns system behaviors, detects and predicts threats, and responds autonomously when needed. It uses collaborative learning, large language models (LLMs), forensic analysis, and threat intelligence APIs to enhance its defense power.
