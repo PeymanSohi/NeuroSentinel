@@ -3,8 +3,13 @@ import numpy as np
 import joblib
 
 class IsolationForestDetector:
-    def __init__(self, n_estimators=100, contamination=0.05, random_state=42):
-        self.model = IsolationForest(n_estimators=n_estimators, contamination=contamination, random_state=random_state)
+    def __init__(self, n_estimators=100, contamination=0.05, random_state=42, **kwargs):
+        self.model = IsolationForest(
+            n_estimators=n_estimators,
+            contamination=contamination,
+            random_state=random_state,
+            **kwargs
+        )
         self.is_fitted = False
 
     def fit(self, X: np.ndarray):

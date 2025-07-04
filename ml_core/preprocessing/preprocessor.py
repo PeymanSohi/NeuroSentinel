@@ -25,59 +25,114 @@ class DataPreprocessor:
     def extract_features(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract numerical and categorical features from system data.
+        Ensures consistent feature set for all samples.
         """
-        features = {}
+        # Define expected features to ensure consistency
+        expected_features = {
+            # System metrics
+            'cpu_percent': 0.0,
+            'memory_percent': 0.0,
+            'disk_usage_percent': 0.0,
+            'load_average_1m': 0.0,
+            'load_average_5m': 0.0,
+            'load_average_15m': 0.0,
+            'boot_time': 0.0,
+            'uptime_hours': 0.0,
+            
+            # Process metrics
+            'total_processes': 0,
+            'unique_users': 0,
+            'avg_process_cpu': 0.0,
+            'avg_process_memory': 0.0,
+            'max_process_cpu': 0.0,
+            'max_process_memory': 0.0,
+            
+            # Network metrics
+            'total_connections': 0,
+            'established_connections': 0,
+            'listening_ports': 0,
+            'unique_remote_ips': 0,
+            
+            # File system metrics
+            'file_events_count': 0,
+            'file_creations': 0,
+            'file_modifications': 0,
+            'file_deletions': 0,
+            
+            # User activity metrics
+            'logged_in_users': 0,
+            'total_users': 0,
+            'total_groups': 0,
+            'recent_logins': 0,
+            
+            # Security metrics
+            'antivirus_running': 0,
+            'firewall_rules_count': 0,
+            'ids_alerts': 0,
+            'security_updates_pending': 0,
+            
+            # Container metrics
+            'running_containers': 0,
+            'total_containers': 0,
+            'container_cpu_usage': 0.0,
+            'container_memory_usage': 0.0,
+            
+            # Threat intelligence metrics
+            'threat_indicators': 0,
+            'high_risk_ips': 0,
+            'malware_detections': 0
+        }
+        
+        features = expected_features.copy()
         
         # System metrics
         if 'system' in data:
             sys_data = data['system']
             features.update({
-                'cpu_percent': sys_data.get('cpu_percent', 0),
-                'memory_percent': sys_data.get('memory_percent', 0),
-                'disk_usage_percent': sys_data.get('disk_usage_percent', 0),
-                'load_average_1m': sys_data.get('load_average', [0, 0, 0])[0],
-                'load_average_5m': sys_data.get('load_average', [0, 0, 0])[1],
-                'load_average_15m': sys_data.get('load_average', [0, 0, 0])[2],
-                'boot_time': sys_data.get('boot_time', 0),
-                'uptime_hours': (pd.Timestamp.now().timestamp() - sys_data.get('boot_time', 0)) / 3600
+                'cpu_percent': float(sys_data.get('cpu_percent', 0)),
+                'memory_percent': float(sys_data.get('memory_percent', 0)),
+                'disk_usage_percent': float(sys_data.get('disk_usage_percent', 0)),
+                'load_average_1m': float(sys_data.get('load_average', [0, 0, 0])[0]),
+                'load_average_5m': float(sys_data.get('load_average', [0, 0, 0])[1]),
+                'load_average_15m': float(sys_data.get('load_average', [0, 0, 0])[2]),
+                'boot_time': float(sys_data.get('boot_time', 0)),
+                'uptime_hours': float((pd.Timestamp.now().timestamp() - sys_data.get('boot_time', 0)) / 3600)
             })
         
         # Process metrics
         if 'process' in data:
             proc_data = data['process']
-            features.update({
-                'total_processes': len(proc_data.get('processes', [])),
-                'unique_users': len(set(p.get('username', '') for p in proc_data.get('processes', []))),
-                'avg_process_cpu': np.mean([p.get('cpu_percent', 0) for p in proc_data.get('processes', [])]),
-                'avg_process_memory': np.mean([p.get('memory_percent', 0) for p in proc_data.get('processes', [])]),
-                'max_process_cpu': np.max([p.get('cpu_percent', 0) for p in proc_data.get('processes', [])]),
-                'max_process_memory': np.max([p.get('memory_percent', 0) for p in proc_data.get('processes', [])])
-            })
+            processes = proc_data.get('processes', [])
+            if processes:
+                features.update({
+                    'total_processes': len(processes),
+                    'unique_users': len(set(p.get('username', '') for p in processes)),
+                    'avg_process_cpu': float(np.mean([p.get('cpu_percent', 0) for p in processes])),
+                    'avg_process_memory': float(np.mean([p.get('memory_percent', 0) for p in processes])),
+                    'max_process_cpu': float(np.max([p.get('cpu_percent', 0) for p in processes])),
+                    'max_process_memory': float(np.max([p.get('memory_percent', 0) for p in processes]))
+                })
         
         # Network metrics
         if 'network' in data:
             net_data = data['network']
+            connections = net_data.get('connections', [])
             features.update({
-                'total_connections': len(net_data.get('connections', [])),
-                'established_connections': len([c for c in net_data.get('connections', []) 
-                                             if c.get('status') == 'ESTABLISHED']),
-                'listening_ports': len([c for c in net_data.get('connections', []) 
-                                      if c.get('status') == 'LISTEN']),
-                'unique_remote_ips': len(set(c.get('raddr', {}).get('ip', '') 
-                                           for c in net_data.get('connections', []) if c.get('raddr')))
+                'total_connections': len(connections),
+                'established_connections': len([c for c in connections if c.get('status') == 'ESTABLISHED']),
+                'listening_ports': len([c for c in connections if c.get('status') == 'LISTEN']),
+                'unique_remote_ips': len(set(c.get('raddr', {}).get('ip', '') for c in connections if c.get('raddr')))
             })
         
         # File system metrics
         if 'file' in data:
             file_data = data['file']
+            events = file_data.get('events', [])
             features.update({
-                'file_events_count': len(file_data.get('events', [])),
-                'file_creations': len([e for e in file_data.get('events', []) 
-                                     if e.get('event_type') == 'created']),
-                'file_modifications': len([e for e in file_data.get('events', []) 
-                                         if e.get('event_type') == 'modified']),
-                'file_deletions': len([e for e in file_data.get('events', []) 
-                                     if e.get('event_type') == 'deleted'])
+                'file_events_count': len(events),
+                'file_creations': len([e for e in events if e.get('event_type') == 'created']),
+                'file_modifications': len([e for e in events if e.get('event_type') == 'modified']),
+                'file_deletions': len([e for e in events if e.get('event_type') == 'deleted'])
             })
         
         # User activity metrics
@@ -103,20 +158,21 @@ class DataPreprocessor:
         # Container metrics
         if 'container' in data:
             container_data = data['container']
+            running_containers = container_data.get('running_containers', [])
             features.update({
-                'running_containers': len(container_data.get('running_containers', [])),
+                'running_containers': len(running_containers),
                 'total_containers': len(container_data.get('all_containers', [])),
-                'container_cpu_usage': np.mean([c.get('cpu_percent', 0) for c in container_data.get('running_containers', [])]),
-                'container_memory_usage': np.mean([c.get('memory_percent', 0) for c in container_data.get('running_containers', [])])
+                'container_cpu_usage': float(np.mean([c.get('cpu_percent', 0) for c in running_containers])) if running_containers else 0.0,
+                'container_memory_usage': float(np.mean([c.get('memory_percent', 0) for c in running_containers])) if running_containers else 0.0
             })
         
         # Threat intelligence metrics
         if 'threat_intel' in data:
             threat_data = data['threat_intel']
+            indicators = threat_data.get('indicators', [])
             features.update({
-                'threat_indicators': len(threat_data.get('indicators', [])),
-                'high_risk_ips': len([i for i in threat_data.get('indicators', []) 
-                                    if i.get('risk_score', 0) > 7]),
+                'threat_indicators': len(indicators),
+                'high_risk_ips': len([i for i in indicators if isinstance(i, dict) and i.get('risk_score', 0) > 7]),
                 'malware_detections': len(threat_data.get('malware_detections', []))
             })
         

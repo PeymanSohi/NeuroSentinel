@@ -1,0 +1,11 @@
+{
+  "validation_samples": 2,
+  "anomaly_samples": 1,
+  "normal_samples": 1,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1_score": 1.0,
+  "roc_auc": 1.0,
+  "threshold_percentile": 95,
+  "final_training_loss": 1.3041828870773315,
+  "threshold": 

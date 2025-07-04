@@ -1,0 +1,76 @@
+{
+  "models": {
+    "isolation_forest_model_v20250704_185558": {
+      "name": "isolation_forest_model",
+      "type": "isolation_forest",
+      "version": "20250704_185558",
+      "description": "Trained on 2 samples",
+      "created_at": "2025-07-04T18:55:58.350012",
+      "status": "saved",
+      "filepath": "models/isolation_forest_experiment_20250704_185558/model.joblib",
+      "updated_at": "2025-07-04T18:55:58.381641"
+    },
+    "isolation_forest_model_v20250704_190400": {
+      "name": "isolation_forest_model",
+      "type": "isolation_forest",
+      "version": "20250704_190400",
+      "description": "Trained on 2 samples",
+      "created_at": "2025-07-04T19:04:00.832034",
+      "status": "saved",
+      "filepath": "models/isolation_forest_experiment_20250704_190400/model.joblib",
+      "updated_at": "2025-07-04T19:04:00.864549"
+    },
+    "isolation_forest_model_v20250704_191736": {
+      "name": "isolation_forest_model",
+      "type": "isolation_forest",
+      "version": "20250704_191736",
+      "description": "Trained on 2 samples",
+      "created_at": "2025-07-04T19:17:36.090140",
+      "status": "saved",
+      "filepath": "models/isolation_forest_experiment_20250704_191735/model.joblib",
+      "updated_at": "2025-07-04T19:17:36.118919"
+    },
+    "isolation_forest_model_v20250704_194237": {
+      "name": "isolation_forest_model",
+      "type": "isolation_forest",
+      "version": "20250704_194237",
+      "description": "Trained on 2 samples",
+      "created_at": "2025-07-04T19:42:37.202557",
+      "status": "saved",
+      "filepath": "models/isolation_forest_experiment_20250704_194236/model.joblib",
+      "updated_at": "2025-07-04T19:42:37.238368"
+    },
+    "isolation_forest_model_v20250704_194346": {
+      "name": "isolation_forest_model",
+      "type": "isolation_forest",
+      "version": "20250704_194346",
+      "description": "Trained on 2 samples",
+      "created_at": "2025-07-04T19:43:46.177761",
+      "status": "saved",
+      "filepath": "models/isolation_forest_experiment_20250704_194346/model.joblib",
+      "updated_at": "2025-07-04T19:43:46.202752"
+    },
+    "autoencoder_model_v20250704_195322": {
+      "name": "autoencoder_model",
+      "type": "autoencoder",
+      "version": "20250704_195322",
+      "description": "Trained on 2 samples",
+      "created_at": "2025-07-04T19:53:22.268193",
+      "status": "saved",
+      "filepath": "models/autoencoder_experiment_20250704_195321/model.joblib",
+      "updated_at": "2025-07-04T19:53:22.270780"
+    }
+  },
+  "versions": {
+    "isolation_forest_model": [
+      "20250704_185558",
+      "20250704_190400",
+      "20250704_191736",
+      "20250704_194237",
+      "20250704_194346"
+    ],
+    "autoencoder_model": [
+      "20250704_195322"
+    ]
+  }
+}

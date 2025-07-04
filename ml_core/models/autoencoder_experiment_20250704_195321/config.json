@@ -1,7 +1,11 @@
 {
   "model_type": "autoencoder",
   "model_params": {
-    "hidden_dims": [64, 32, 16],
+    "hidden_dims": [
+      64,
+      32,
+      16
+    ],
     "dropout_rate": 0.2,
     "activation": "relu"
   },
@@ -43,4 +47,4 @@
       "system_monitoring"
     ]
   }
-} 
+}

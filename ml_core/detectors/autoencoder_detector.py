@@ -1,9 +1,18 @@
 import torch
 import numpy as np
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 try:
-    from ml_core.models.autoencoder import AutoEncoder
-except ImportError:
     from models.autoencoder import AutoEncoder
+except ImportError:
+    try:
+        from ml_core.models.autoencoder import AutoEncoder
+    except ImportError:
+        from models.autoencoder import AutoEncoder
 
 class AutoEncoderDetector:
     def __init__(self, model: AutoEncoder, threshold: float = None, device: str = None):

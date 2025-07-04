@@ -53,8 +53,6 @@ services:
     volumes:
       - ./ml_core:/app
       - ./data:/data
-      - ./models:/app/models
-      - ./logs:/app/logs
 
   dashboard:
     build: ./dashboard

@@ -105,8 +105,19 @@ class ExperimentTracker:
         
         # Save metrics
         metrics_path = self.experiment_dir / "metrics.json"
+        def to_native(obj):
+            if isinstance(obj, dict):
+                return {k: to_native(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [to_native(v) for v in obj]
+            elif hasattr(obj, 'item') and callable(obj.item):
+                return obj.item()
+            elif hasattr(obj, 'tolist') and callable(obj.tolist):
+                return obj.tolist()
+            else:
+                return float(obj) if isinstance(obj, (np.floating,)) else obj
         with open(metrics_path, "w") as f:
-            json.dump(metrics, f, indent=2)
+            json.dump(to_native(metrics), f, indent=2)
         
         self.logger.info(f"Saved artifacts to: {self.experiment_dir}")
         
@@ -170,14 +181,14 @@ def evaluate_model(detector, preprocessor, validation_data: List[Dict[str, Any]]
     from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
     
     metrics = {
-        "validation_samples": len(X_val),
-        "anomaly_samples": np.sum(y_val),
-        "normal_samples": len(y_val) - np.sum(y_val),
-        "precision": precision_score(y_val, predictions, zero_division=0),
-        "recall": recall_score(y_val, predictions, zero_division=0),
-        "f1_score": f1_score(y_val, predictions, zero_division=0),
-        "roc_auc": roc_auc_score(y_val, scores) if len(np.unique(y_val)) > 1 else 0.5,
-        "threshold_percentile": config.get('evaluation', {}).get('threshold_percentile', 95)
+        "validation_samples": int(len(X_val)),
+        "anomaly_samples": int(np.sum(y_val)),
+        "normal_samples": int(len(y_val) - np.sum(y_val)),
+        "precision": float(precision_score(y_val, predictions, zero_division=0)),
+        "recall": float(recall_score(y_val, predictions, zero_division=0)),
+        "f1_score": float(f1_score(y_val, predictions, zero_division=0)),
+        "roc_auc": float(roc_auc_score(y_val, scores) if len(np.unique(y_val)) > 1 else 0.5),
+        "threshold_percentile": int(config.get('evaluation', {}).get('threshold_percentile', 95))
     }
     
     return metrics
@@ -274,7 +285,9 @@ def train_autoencoder(data_samples: List[Dict[str, Any]], validation_data: List[
     threshold = trainer.compute_threshold(dataloader, percentile=config.get("detector_params", {}).get("threshold_percentile", 95))
     
     # Create detector
-    detector_params = config.get("detector_params", {})
+    detector_params = config.get("detector_params", {}).copy()
+    detector_params.pop("threshold", None)  # Remove threshold if present
+    detector_params.pop("threshold_percentile", None)  # Remove threshold_percentile if present
     detector = AutoEncoderDetector(model, threshold=threshold, **detector_params)
     
     # Evaluate on validation data

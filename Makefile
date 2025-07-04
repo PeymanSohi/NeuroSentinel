@@ -136,6 +136,28 @@ evaluate:
 	@echo "Evaluating latest model..."
 	@echo "Use the API endpoint: curl -X POST http://localhost:9000/predict -H 'Content-Type: application/json' -d '{\"data\": {...}}'"
 
+# Database Management
+db-init:
+	@echo "Initializing database..."
+	docker-compose run --rm server python manage.py init-db
+
+db-create-tables:
+	@echo "Creating database tables..."
+	docker-compose run --rm server python manage.py create-tables
+
+db-check:
+	@echo "Checking database status..."
+	docker-compose run --rm server python manage.py check-db
+
+db-stats:
+	@echo "Database statistics..."
+	docker-compose run --rm server python manage.py stats
+
+db-reset:
+	@echo "Resetting database (DESTRUCTIVE)..."
+	@read -p "Are you sure? This will delete all data! [y/N]: " confirm && [ "$$confirm" = "y" ] || exit 1
+	docker-compose run --rm server python manage.py reset-db
+
 # Documentation
 docs:
 	@echo "Generating documentation..."

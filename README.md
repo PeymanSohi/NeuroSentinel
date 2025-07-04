@@ -25,6 +25,345 @@ Unlike traditional, centralized security solutions, this system empowers each no
 
 ---
 
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Docker & Docker Compose**: Version 20.10+ and 2.0+
+- **Git**: For cloning the repository
+- **8GB+ RAM**: Recommended for running all services
+- **10GB+ Disk Space**: For containers, models, and data
+
+### Installation & Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/NeuroSentinel.git
+   cd NeuroSentinel
+   ```
+
+2. **Build all containers**
+   ```bash
+   docker-compose build
+   ```
+
+3. **Start core infrastructure**
+   ```bash
+   docker-compose up -d postgres redis prometheus
+   ```
+
+4. **Initialize the database**
+   ```bash
+   make db-init
+   ```
+
+5. **Start all services**
+   ```bash
+   docker-compose up -d
+   ```
+
+6. **Generate sample data and train models**
+   ```bash
+   make generate-sample-data
+   make train-isolation-forest
+   make train-autoencoder
+   ```
+
+### 🎯 Running the Project
+
+#### Start All Services
+```bash
+# Start everything
+docker-compose up -d
+
+# Check status
+docker-compose ps
+
+# View logs
+docker-compose logs -f
+```
+
+#### Access Services
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Dashboard** | http://localhost:5173 | React frontend |
+| **API Server** | http://localhost:8000 | FastAPI backend |
+| **ML Core API** | http://localhost:9000 | ML model serving |
+| **Prometheus** | http://localhost:9090 | Metrics monitoring |
+| **PostgreSQL** | localhost:5432 | Database |
+| **Redis** | localhost:6379 | Cache/Queue |
+
+#### API Endpoints
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Get all events
+curl http://localhost:8000/events
+
+# Get all agents
+curl http://localhost:8000/agents
+
+# ML prediction
+curl -X POST http://localhost:9000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"data": {...}}'
+```
+
+#### Training ML Models
+
+```bash
+# Train Isolation Forest
+make train-isolation-forest
+
+# Train AutoEncoder
+make train-autoencoder
+
+# Quick training with minimal data
+make quick-train
+
+# Run tests
+make test
+```
+
+#### Database Management
+
+```bash
+# Initialize database
+make db-init
+
+# Check database status
+make db-check
+
+# View database stats
+make db-stats
+
+# Reset database (DESTRUCTIVE)
+make db-reset
+```
+
+#### Development Commands
+
+```bash
+# View service status
+make status
+
+# View recent logs
+make logs
+
+# Clean up temporary files
+make clean
+
+# Run tests locally
+make test-local
+```
+
+### 📊 Monitoring & Observability
+
+#### Check System Health
+```bash
+# All services status
+docker-compose ps
+
+# Service health
+curl http://localhost:8000/health | jq
+
+# Database connectivity
+make db-check
+
+# ML API health
+curl http://localhost:9000/health
+```
+
+#### View Logs
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f server
+docker-compose logs -f agent
+docker-compose logs -f ml_core
+
+# Recent training logs
+make logs
+```
+
+#### Metrics & Monitoring
+- **Prometheus**: http://localhost:9090
+- **Grafana**: Available via Prometheus data source
+- **Application Metrics**: Available via `/metrics` endpoints
+
+### 🔧 Configuration
+
+#### Environment Variables
+
+Create `.env` file for custom configuration:
+
+```bash
+# Database
+POSTGRES_DB=neurosentinel
+POSTGRES_USER=neurosentinel
+POSTGRES_PASSWORD=your_password
+
+# Redis
+REDIS_URL=redis://redis:6379
+
+# Server
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8000
+
+# Agent
+AGENT_ID=agent-001
+AGENT_SERVER_URL=http://server:8000
+AGENT_COLLECTION_INTERVAL=30
+
+# ML Core
+ML_CORE_HOST=0.0.0.0
+ML_CORE_PORT=9000
+```
+
+#### Model Configuration
+
+Edit config files in `ml_core/data/configs/`:
+
+```json
+{
+  "model_type": "autoencoder",
+  "model_params": {
+    "hidden_dims": [64, 32, 16],
+    "dropout_rate": 0.2,
+    "activation": "relu"
+  },
+  "training": {
+    "epochs": 50,
+    "batch_size": 32
+  }
+}
+```
+
+### 🧪 Testing
+
+#### Run All Tests
+```bash
+# ML core tests
+make test
+
+# Local tests (requires venv)
+make test-local
+
+# Quick training test
+make quick-train
+```
+
+#### Manual Testing
+
+```bash
+# Test agent data collection
+docker-compose logs agent
+
+# Test server API
+curl http://localhost:8000/health
+
+# Test ML predictions
+curl -X POST http://localhost:9000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"data": {"cpu_percent": 85, "memory_percent": 90}}'
+
+# Test WebSocket connection
+wscat -c ws://localhost:8000/ws
+```
+
+### 🚨 Troubleshooting
+
+#### Common Issues
+
+**1. Database Connection Errors**
+```bash
+# Reinitialize database
+make db-init
+
+# Check database status
+make db-check
+```
+
+**2. Container Build Failures**
+```bash
+# Clean rebuild
+docker-compose build --no-cache
+
+# Remove all containers and volumes
+docker-compose down -v
+docker-compose up -d
+```
+
+**3. ML Training Failures**
+```bash
+# Check config files
+ls -la ml_core/data/configs/
+
+# Regenerate sample data
+make generate-sample-data
+
+# Clean and retrain
+make clean
+make train-isolation-forest
+```
+
+**4. Port Conflicts**
+```bash
+# Check what's using ports
+lsof -i :8000
+lsof -i :9000
+lsof -i :5173
+
+# Stop conflicting services
+sudo systemctl stop conflicting-service
+```
+
+#### Log Analysis
+
+```bash
+# Check for errors
+docker-compose logs | grep -i error
+
+# Check for warnings
+docker-compose logs | grep -i warn
+
+# Follow specific service
+docker-compose logs -f server | grep -i error
+```
+
+### 🧹 Cleanup
+
+#### Stop All Services
+```bash
+# Stop and remove containers
+docker-compose down
+
+# Stop and remove containers + volumes
+docker-compose down -v
+
+# Stop and remove containers + volumes + images
+docker-compose down -v --rmi all
+```
+
+#### Clean Development Environment
+```bash
+# Clean temporary files
+make clean
+
+# Remove all containers
+docker system prune -a
+
+# Remove volumes
+docker volume prune
+```
+
+---
+
 ## 🧱 Architecture Overview
 
 ```
@@ -88,14 +427,16 @@ Unlike traditional, centralized security solutions, this system empowers each no
 ## 🚧 Development Roadmap
 
 ### Phase 1 – MVP
-- [ ] Basic agent for monitoring logs and files
-- [ ] FastAPI backend with alert ingestion and REST API
-- [ ] Basic dashboard UI
+- [x] Basic agent for monitoring logs and files
+- [x] FastAPI backend with alert ingestion and REST API
+- [x] Basic dashboard UI
+- [x] ML-based local anomaly detection
+- [x] Database integration and persistence
 
 ### Phase 2 – Core Intelligence
-- [ ] ML-based local anomaly detection
 - [ ] Federated model sharing with DP
 - [ ] Snapshot module for forensic capture
+- [ ] Enhanced threat detection algorithms
 
 ### Phase 3 – LLM & Threat API Integration
 - [ ] LLM-powered log summarization
@@ -200,261 +541,350 @@ NeuroSentinel/
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- Python 3.11+ (for local development)
-- Git
+- **Docker & Docker Compose**: Version 20.10+ and 2.0+
+- **Git**: For cloning the repository
+- **8GB+ RAM**: Recommended for running all services
+- **10GB+ Disk Space**: For containers, models, and data
 
-### 1. Clone and Setup
+### Installation & Setup
 
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/NeuroSentinel.git
+   cd NeuroSentinel
+   ```
+
+2. **Build all containers**
+   ```bash
+   docker-compose build
+   ```
+
+3. **Start core infrastructure**
+   ```bash
+   docker-compose up -d postgres redis prometheus
+   ```
+
+4. **Initialize the database**
+   ```bash
+   make db-init
+   ```
+
+5. **Start all services**
+   ```bash
+   docker-compose up -d
+   ```
+
+6. **Generate sample data and train models**
+   ```bash
+   make generate-sample-data
+   make train-isolation-forest
+   make train-autoencoder
+   ```
+
+### 🎯 Running the Project
+
+#### Start All Services
 ```bash
-git clone <repository-url>
-cd NeuroSentinel
-```
-
-### 2. Start Services
-
-```bash
-# Start all services
+# Start everything
 docker-compose up -d
 
-# Or start specific services
-docker-compose up agent server ml_core dashboard
-```
-
-### 3. Train ML Models
-
-```bash
-# Train IsolationForest model
-make train-isolation-forest
-
-# Train AutoEncoder model
-make train-autoencoder
-
-# Or use Docker Compose directly
-docker-compose run --rm ml_core_train
-```
-
-### 4. Test the System
-
-```bash
-# Run ML core tests
-make test
-
-# Check service status
-make status
+# Check status
+docker-compose ps
 
 # View logs
+docker-compose logs -f
+```
+
+#### Access Services
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Dashboard** | http://localhost:5173 | React frontend |
+| **API Server** | http://localhost:8000 | FastAPI backend |
+| **ML Core API** | http://localhost:9000 | ML model serving |
+| **Prometheus** | http://localhost:9090 | Metrics monitoring |
+| **PostgreSQL** | localhost:5432 | Database |
+| **Redis** | localhost:6379 | Cache/Queue |
+
+#### API Endpoints
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Get all events
+curl http://localhost:8000/events
+
+# Get all agents
+curl http://localhost:8000/agents
+
+# ML prediction
+curl -X POST http://localhost:9000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"data": {...}}'
+```
+
+#### Training ML Models
+
+```bash
+# Train Isolation Forest
+make train-isolation-forest
+
+# Train AutoEncoder
+make train-autoencoder
+
+# Quick training with minimal data
+make quick-train
+
+# Run tests
+make test
+```
+
+#### Database Management
+
+```bash
+# Initialize database
+make db-init
+
+# Check database status
+make db-check
+
+# View database stats
+make db-stats
+
+# Reset database (DESTRUCTIVE)
+make db-reset
+```
+
+#### Development Commands
+
+```bash
+# View service status
+make status
+
+# View recent logs
+make logs
+
+# Clean up temporary files
+make clean
+
+# Run tests locally
+make test-local
+```
+
+### 📊 Monitoring & Observability
+
+#### Check System Health
+```bash
+# All services status
+docker-compose ps
+
+# Service health
+curl http://localhost:8000/health | jq
+
+# Database connectivity
+make db-check
+
+# ML API health
+curl http://localhost:9000/health
+```
+
+#### View Logs
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f server
+docker-compose logs -f agent
+docker-compose logs -f ml_core
+
+# Recent training logs
 make logs
 ```
 
-## 📊 ML Core - Machine Learning Module
+#### Metrics & Monitoring
+- **Prometheus**: http://localhost:9090
+- **Grafana**: Available via Prometheus data source
+- **Application Metrics**: Available via `/metrics` endpoints
 
-The ML Core module provides sophisticated anomaly detection capabilities using both statistical and deep learning approaches.
+### 🔧 Configuration
 
-### Supported Models
+#### Environment Variables
 
-1. **IsolationForest**: Fast, unsupervised anomaly detection for tabular data
-2. **AutoEncoder**: Neural network-based approach for complex pattern recognition
-
-### Training Best Practices
-
-#### 1. Data Preparation
-- Store training data in `data/processed/`
-- Use validation data for threshold selection
-- Version your data files with timestamps
-
-#### 2. Configuration Management
-- Use JSON config files in `data/configs/`
-- Separate configs for different model types
-- Include experiment metadata
-
-#### 3. Experiment Tracking
-- All experiments are logged with timestamps
-- Git commit hashes are captured
-- Metrics and artifacts are saved automatically
-
-#### 4. Model Management
-- Models are versioned and registered
-- Artifacts include model, preprocessor, and config
-- Easy deployment and rollback
-
-### Training Commands
+Create `.env` file for custom configuration:
 
 ```bash
-# Quick training
-make train-isolation-forest
-make train-autoencoder
+# Database
+POSTGRES_DB=neurosentinel
+POSTGRES_USER=neurosentinel
+POSTGRES_PASSWORD=your_password
 
-# Custom training
-make train-custom CONFIG=data/configs/custom_config.json MODEL_TYPE=isolation_forest EXPERIMENT_NAME=my_experiment
+# Redis
+REDIS_URL=redis://redis:6379
 
-# Development training
-make dev-setup
-make dev-test
+# Server
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8000
+
+# Agent
+AGENT_ID=agent-001
+AGENT_SERVER_URL=http://server:8000
+AGENT_COLLECTION_INTERVAL=30
+
+# ML Core
+ML_CORE_HOST=0.0.0.0
+ML_CORE_PORT=9000
 ```
 
-### API Usage
+#### Model Configuration
 
-```bash
-# Start ML API server
-make serve
+Edit config files in `ml_core/data/configs/`:
 
-# Predict anomalies
-curl -X POST http://localhost:9000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"data": {"system": {"cpu_percent": 85.5}}}'
-
-# List models
-curl http://localhost:9000/models
+```json
+{
+  "model_type": "autoencoder",
+  "model_params": {
+    "hidden_dims": [64, 32, 16],
+    "dropout_rate": 0.2,
+    "activation": "relu"
+  },
+  "training": {
+    "epochs": 50,
+    "batch_size": 32
+  }
+}
 ```
 
-## 🔧 Configuration
+### 🧪 Testing
 
-### Agent Configuration
-
-Environment variables in `agent/config.py`:
-- `SERVER_URL`: Central server endpoint
-- `AGENT_ID`: Unique agent identifier
-- `INTERVAL`: Data collection interval
-- `SEND_MODE`: Communication mode (rest/websocket)
-
-### ML Core Configuration
-
-Configuration files in `data/configs/`:
-- Model hyperparameters
-- Training settings
-- Evaluation metrics
-- Experiment metadata
-
-### Docker Configuration
-
-Services in `docker-compose.yml`:
-- `agent`: Monitoring agent
-- `server`: Central API server
-- `ml_core`: ML training and inference
-- `ml_core_test`: Testing service
-- `ml_core_train`: Training service
-- `dashboard`: Web interface
-
-## 📈 Monitoring and Logging
-
-### Logs
-
-- Training logs: `logs/` directory
-- Experiment artifacts: `models/` directory
-- Service logs: `docker-compose logs <service>`
-
-### Health Checks
-
+#### Run All Tests
 ```bash
-# Check all services
-make status
-
-# API health
-curl http://localhost:8000/health
-curl http://localhost:9000/health
-
-# Dashboard
-open http://localhost:3000
-```
-
-## 🧪 Testing
-
-### Run Tests
-
-```bash
-# All tests
+# ML core tests
 make test
 
-# Local development
+# Local tests (requires venv)
 make test-local
 
-# Specific service
-docker-compose run --rm ml_core_test
+# Quick training test
+make quick-train
 ```
 
-### Test Coverage
-
-- Unit tests for ML components
-- Integration tests for API endpoints
-- Data validation tests
-- Security scans
-
-## 🚀 Deployment
-
-### Development
+#### Manual Testing
 
 ```bash
-# Setup development environment
-make dev-setup
+# Test agent data collection
+docker-compose logs agent
 
-# Run tests
-make dev-test
+# Test server API
+curl http://localhost:8000/health
 
-# Start services
-docker-compose up
+# Test ML predictions
+curl -X POST http://localhost:9000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"data": {"cpu_percent": 85, "memory_percent": 90}}'
+
+# Test WebSocket connection
+wscat -c ws://localhost:8000/ws
 ```
 
-### Production
+### 🚨 Troubleshooting
+
+#### Common Issues
+
+**1. Database Connection Errors**
+```bash
+# Reinitialize database
+make db-init
+
+# Check database status
+make db-check
+```
+
+**2. Container Build Failures**
+```bash
+# Clean rebuild
+docker-compose build --no-cache
+
+# Remove all containers and volumes
+docker-compose down -v
+docker-compose up -d
+```
+
+**3. ML Training Failures**
+```bash
+# Check config files
+ls -la ml_core/data/configs/
+
+# Regenerate sample data
+make generate-sample-data
+
+# Clean and retrain
+make clean
+make train-isolation-forest
+```
+
+**4. Port Conflicts**
+```bash
+# Check what's using ports
+lsof -i :8000
+lsof -i :9000
+lsof -i :5173
+
+# Stop conflicting services
+sudo systemctl stop conflicting-service
+```
+
+#### Log Analysis
 
 ```bash
-# Build and deploy
-docker-compose -f docker-compose.prod.yml up -d
+# Check for errors
+docker-compose logs | grep -i error
 
-# Monitor deployment
-make status
+# Check for warnings
+docker-compose logs | grep -i warn
+
+# Follow specific service
+docker-compose logs -f server | grep -i error
 ```
 
-### CI/CD Pipeline
+### 🧹 Cleanup
 
-The project includes GitHub Actions workflows for:
-- Automated testing
-- Security scanning
-- Docker image building
-- Staging deployment
-- Production deployment
+#### Stop All Services
+```bash
+# Stop and remove containers
+docker-compose down
 
-## 📚 Documentation
+# Stop and remove containers + volumes
+docker-compose down -v
 
-- [ML Core Documentation](ml_core/README.md)
-- [Agent Documentation](agent/README.md)
-- [API Documentation](http://localhost:8000/docs)
-- [ML API Documentation](http://localhost:9000/docs)
+# Stop and remove containers + volumes + images
+docker-compose down -v --rmi all
+```
 
-## 🤝 Contributing
+#### Clean Development Environment
+```bash
+# Clean temporary files
+make clean
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+# Remove all containers
+docker system prune -a
 
-### Development Guidelines
+# Remove volumes
+docker volume prune
+```
 
-- Follow PEP 8 for Python code
-- Add type hints
-- Include docstrings
-- Write unit tests
-- Update documentation
+---
 
-## 📄 License
+## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Apache License 2.0**.  
+See the [LICENSE](LICENSE) file for full details.
 
-## 🆘 Support
+- ✅ Free for commercial use  
+- ✅ Open to contributions and forks  
+- ✅ Includes patent grant protection  
+- ✅ Requires proper attribution
 
-- Issues: [GitHub Issues](https://github.com/your-repo/issues)
-- Documentation: [Wiki](https://github.com/your-repo/wiki)
-- Discussions: [GitHub Discussions](https://github.com/your-repo/discussions)
-
-## 🔮 Roadmap
-
-- [ ] Advanced threat hunting capabilities
-- [ ] Integration with SIEM systems
-- [ ] Automated incident response
-- [ ] Cloud-native deployment options
-- [ ] Advanced ML models (LSTM, Transformer)
-- [ ] Real-time threat correlation
-- [ ] Multi-tenant support
-- [ ] Advanced visualization dashboard
+> By using this project, you agree not to use it for malicious or unethical purposes.
 

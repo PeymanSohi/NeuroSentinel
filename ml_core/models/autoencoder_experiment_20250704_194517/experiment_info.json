@@ -1,0 +1,67 @@
+{
+  "experiment_name": "autoencoder_experiment",
+  "start_time": "2025-07-04T19:45:17.891212",
+  "git_commit": "/bin/sh: 1: git: not found",
+  "git_branch": "/bin/sh: 1: git: not found",
+  "config": {
+    "model_type": "autoencoder",
+    "model_params": {
+      "hidden_dims": [
+        64,
+        32,
+        16
+      ],
+      "dropout_rate": 0.2,
+      "activation": "relu",
+      "batch_norm": true
+    },
+    "trainer_params": {
+      "learning_rate": 0.001,
+      "weight_decay": 1e-05,
+      "optimizer": "adam",
+      "scheduler": "reduce_lr_on_plateau"
+    },
+    "detector_params": {
+      "threshold": null,
+      "threshold_percentile": 95
+    },
+    "training": {
+      "data_path": "/data/processed/training_data.json",
+      "validation_path": "/data/processed/validation_data.json",
+      "output_dir": "/app/models",
+      "model_name": "autoencoder_v1",
+      "batch_size": 32,
+      "epochs": 50,
+      "early_stopping": true,
+      "patience": 10
+    },
+    "preprocessing": {
+      "feature_selection": true,
+      "scaling": "standard",
+      "handle_missing": "mean"
+    },
+    "evaluation": {
+      "metrics": [
+        "reconstruction_error",
+        "anomaly_score"
+      ],
+      "visualization": true
+    },
+    "experiment": {
+      "description": "AutoEncoder for system anomaly detection",
+      "tags": [
+        "anomaly_detection",
+        "deep_learning",
+        "system_monitoring"
+      ]
+    }
+  },
+  "data_info": {
+    "training_samples": 2,
+    "validation_samples": 2,
+    "training_data_path": "/data/processed/training_data.json",
+    "validation_data_path": "/data/processed/validation_data.json"
+  },
+  "python_version": "3.11.13 (main, Jul  1 2025, 10:33:40) [GCC 12.2.0]",
+  "platform": "linux"
+}

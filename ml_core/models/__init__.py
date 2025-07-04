@@ -1,3 +1,3 @@
-from .autoencoder import AutoEncoder
+from .autoencoder import AutoEncoder, AutoEncoderTrainer
 
-__all__ = ['AutoEncoder'] 
+__all__ = ['AutoEncoder', 'AutoEncoderTrainer'] 
