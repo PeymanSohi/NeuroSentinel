@@ -1,5 +1,5 @@
 
-# 🧠 🧠 NeuroSentinel  
+# 🧠 NeuroSentinel  
 ### Powered by AI, LLMs, Federated Learning, Threat Intelligence, and Forensics
 
 ---
@@ -12,7 +12,7 @@ Unlike traditional, centralized security solutions, this system empowers each no
 
 ---
 
-## 🧠 Key Features
+## 🔑 Key Features
 
 - **Local Behavioral Anomaly Detection** using ML (AutoEncoders, Isolation Forest, etc.)
 - **Federated Learning Engine** for collaborative model training across distributed nodes
@@ -89,9 +89,9 @@ Unlike traditional, centralized security solutions, this system empowers each no
 ## 🚧 Development Roadmap
 
 ### Phase 1 – MVP
-- [x] Basic agent for monitoring logs and files
-- [x] FastAPI backend with alert ingestion and REST API
-- [x] Basic dashboard UI
+- [ ] Basic agent for monitoring logs and files
+- [ ] FastAPI backend with alert ingestion and REST API
+- [ ] Basic dashboard UI
 
 ### Phase 2 – Core Intelligence
 - [ ] ML-based local anomaly detection
