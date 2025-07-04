@@ -10,29 +10,20 @@ import grp
 from datetime import datetime
 import asyncio
 import json
-from collectors import system, process, network, file, user, logs, persistence, firewall, container, cloud, threat_intel, integrity, security_tools
 
 try:
-    from watchdog.observers import Observer
-    from watchdog.events import FileSystemEventHandler
-    WATCHDOG_AVAILABLE = True
     import websockets
     WEBSOCKETS_AVAILABLE = True
 except ImportError:
-    WATCHDOG_AVAILABLE = False
     WEBSOCKETS_AVAILABLE = False
 
-SERVER_URL = os.getenv("SERVER_URL", "http://server:8000/events")
-AGENT_ID = socket.gethostname()
-INTERVAL = int(os.getenv("AGENT_INTERVAL", 10))  # seconds
-
-SEND_MODE = os.getenv("SEND_MODE", "rest").lower()  # 'rest' or 'websocket'
-WS_URL = os.getenv("WS_URL", "ws://server:8000/ws/events")
+from config import SERVER_URL, AGENT_ID, INTERVAL
+from collectors import system, process, network, file, user, logs, persistence, firewall, container, cloud, threat_intel, integrity, security_tools
 
 # --- File System Monitoring (Watchdog) ---
 file_events = []
 
-class FileChangeHandler(FileSystemEventHandler):
+class FileChangeHandler:
     def on_any_event(self, event):
         file_events.append({
             "event_type": event.event_type,
@@ -42,7 +33,7 @@ class FileChangeHandler(FileSystemEventHandler):
         })
 
 def start_file_monitor(path="/etc"):
-    if not WATCHDOG_AVAILABLE:
+    if not WEBSOCKETS_AVAILABLE:
         return None
     observer = Observer()
     handler = FileChangeHandler()
@@ -172,7 +163,7 @@ async def send_event_ws(event):
 
 def main():
     print(f"Starting agent {AGENT_ID}, reporting to {SERVER_URL} every {INTERVAL}s using {SEND_MODE.upper()}...")
-    observer = start_file_monitor("/etc") if WATCHDOG_AVAILABLE else None
+    observer = start_file_monitor("/etc") if WEBSOCKETS_AVAILABLE else None
     try:
         while True:
             event = collect_all_data()

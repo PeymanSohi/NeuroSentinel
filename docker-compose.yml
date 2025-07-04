@@ -17,10 +17,10 @@ services:
     depends_on:
       - server
     environment:
-      - SERVER_URL=http://server:8000/events
+      - SEND_MODE=websocket
+      - WS_URL=ws://server:8000/ws/events
     networks:
       - nsnet
-
   ml_core:
     build: ./ml_core
     ports:
