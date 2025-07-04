@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.venv/
+venv/
+ENV/
+steps.md
+
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node.js
+node_modules/
+dist/
+build/
+.npm/
+
+# Vite/React
+*.log
+*.local
+*.env*
+
+# Docker
+*.pid
+*.sock
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Database
+pgdata/
+
+# Misc
+*.bak
+*.tmp
+*.old
+
+# Ignore local config
+.env
+.env.* 
