@@ -1,6 +1,9 @@
 import torch
 import numpy as np
-from ml_core.models.autoencoder import AutoEncoder
+try:
+    from ml_core.models.autoencoder import AutoEncoder
+except ImportError:
+    from models.autoencoder import AutoEncoder
 
 class AutoEncoderDetector:
     def __init__(self, model: AutoEncoder, threshold: float = None, device: str = None):

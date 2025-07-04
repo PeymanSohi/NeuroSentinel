@@ -2,10 +2,16 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Any
 import logging
-from ml_core.detectors import IsolationForestDetector, AutoEncoderDetector
-from ml_core.preprocessing import DataPreprocessor
-from ml_core.utils import AnomalyScorer, ModelManager
-from ml_core.models import AutoEncoder
+try:
+    from ml_core.detectors import IsolationForestDetector, AutoEncoderDetector
+    from ml_core.preprocessing import DataPreprocessor
+    from ml_core.utils import AnomalyScorer, ModelManager
+    from ml_core.models import AutoEncoder
+except ImportError:
+    from detectors import IsolationForestDetector, AutoEncoderDetector
+    from preprocessing import DataPreprocessor
+    from utils import AnomalyScorer, ModelManager
+    from models import AutoEncoder
 import numpy as np
 
 # Configure logging

@@ -1,8 +1,12 @@
 import numpy as np
 from typing import Dict, List, Any, Tuple
 import logging
-from ml_core.detectors import IsolationForestDetector, AutoEncoderDetector
-from ml_core.preprocessing import DataPreprocessor
+try:
+    from ml_core.detectors import IsolationForestDetector, AutoEncoderDetector
+    from ml_core.preprocessing import DataPreprocessor
+except ImportError:
+    from detectors import IsolationForestDetector, AutoEncoderDetector
+    from preprocessing import DataPreprocessor
 
 logger = logging.getLogger(__name__)
 
