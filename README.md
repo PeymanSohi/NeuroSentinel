@@ -38,7 +38,7 @@ Unlike traditional, centralized security solutions, this system empowers each no
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/NeuroSentinel.git
+   git clone https://github.com/peymansohi/NeuroSentinel.git
    cd NeuroSentinel
    ```
 
