@@ -24,7 +24,7 @@ except ImportError:
     WATCHDOG_AVAILABLE = False
 
 from config import SERVER_URL, AGENT_ID, INTERVAL, SEND_MODE, WS_URL
-from collectors import system, process, network, file, user, logs, persistence, firewall, container, cloud, threat_intel, integrity, security_tools
+from collectors import system, process, network, file, user, logs, persistence, firewall, container, cloud, threat_intel, integrity, security_tools, snapshot
 
 # --- File System Monitoring (Watchdog) ---
 file_events = []
@@ -171,18 +171,133 @@ async def send_event_ws(event):
     except Exception as e:
         print(f"[ERROR] Failed to report event via WebSocket: {e}")
 
+ML_CORE_URL = os.getenv("ML_CORE_URL", "http://ml_core:9000/predict")
+
+def detect_anomaly(event):
+    try:
+        response = requests.post(ML_CORE_URL, json={"data": event}, timeout=10)
+        if response.status_code == 200:
+            result = response.json()
+            return result.get("is_anomalous", False), result.get("anomaly_score", 0.0)
+        else:
+            print(f"[ERROR] ML core returned {response.status_code}: {response.text}")
+            return False, 0.0
+    except Exception as e:
+        print(f"[ERROR] Failed to call ML core: {e}")
+        return False, 0.0
+
+SNAPSHOT_WS_PORT = int(os.getenv("SNAPSHOT_WS_PORT", 8080))
+
+async def handle_snapshot_request(websocket, path):
+    """Handle snapshot requests from server via WebSocket."""
+    try:
+        async for message in websocket:
+            try:
+                data = json.loads(message)
+                snapshot_type = data.get("type", "all")  # "agent", "all", "process", or "all"
+                target_pid = data.get("pid")
+                
+                print(f"[SNAPSHOT] Received request: {snapshot_type}")
+                
+                results = {}
+                
+                if snapshot_type in ["agent", "all"]:
+                    # Snapshot agent process
+                    agent_pid = os.getpid()
+                    results["agent"] = {
+                        "pid": agent_pid,
+                        "memory": snapshot.take_memory_snapshot(agent_pid),
+                        "lsof": snapshot.collect_lsof(agent_pid)
+                    }
+                
+                if snapshot_type in ["all", "all_processes"]:
+                    # Snapshot all processes (lsof)
+                    results["all_processes"] = {
+                        "lsof": snapshot.collect_lsof()
+                    }
+                
+                if snapshot_type == "process" and target_pid:
+                    # Snapshot specific process
+                    results["target_process"] = {
+                        "pid": target_pid,
+                        "memory": snapshot.take_memory_snapshot(target_pid),
+                        "lsof": snapshot.collect_lsof(target_pid)
+                    }
+                
+                # Send results back
+                await websocket.send(json.dumps({
+                    "status": "completed",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "results": results
+                }))
+                
+            except json.JSONDecodeError:
+                await websocket.send(json.dumps({
+                    "status": "error",
+                    "message": "Invalid JSON"
+                }))
+            except Exception as e:
+                await websocket.send(json.dumps({
+                    "status": "error",
+                    "message": str(e)
+                }))
+    except websockets.exceptions.ConnectionClosed:
+        print("[SNAPSHOT] WebSocket connection closed")
+
+async def start_snapshot_server():
+    """Start WebSocket server for snapshot requests."""
+    server = await websockets.serve(handle_snapshot_request, "0.0.0.0", SNAPSHOT_WS_PORT)
+    print(f"[SNAPSHOT] WebSocket server started on port {SNAPSHOT_WS_PORT}")
+    return server
+
 def main():
     print(f"Starting agent {AGENT_ID}, reporting to {SERVER_URL} every {INTERVAL}s using {SEND_MODE.upper()}...")
-    # Disable file monitoring for now to avoid issues
+    print(f"[SNAPSHOT] WebSocket server will start on port {SNAPSHOT_WS_PORT}")
+    
     observer = None
-    try:
+    
+    # Start WebSocket server in background
+    async def run_agent_with_websocket():
+        # Start snapshot WebSocket server
+        snapshot_server = await start_snapshot_server()
+        
+        # Main agent loop
         while True:
-            event = collect_all_data()
-            if SEND_MODE == "websocket":
-                asyncio.run(send_event_ws(event))
-            else:
-                send_event_rest(event)
-            time.sleep(INTERVAL)
+            try:
+                event = collect_all_data()
+                is_anomaly, anomaly_score = detect_anomaly(event)
+                if is_anomaly:
+                    print(f"[ALERT] Anomaly detected! Score: {anomaly_score}")
+                    # 1. Snapshot agent process
+                    agent_pid = os.getpid()
+                    print(f"[SNAPSHOT] Agent process PID: {agent_pid}")
+                    print(snapshot.take_memory_snapshot(agent_pid))
+                    print(snapshot.collect_lsof(agent_pid))
+                    # 2. Snapshot all processes (lsof)
+                    print("[SNAPSHOT] All processes (lsof)")
+                    print(snapshot.collect_lsof())
+                    # 3. Snapshot most suspicious process (if available)
+                    processes = event.get("process", {}).get("processes", [])
+                    if processes:
+                        # Example: pick process with highest memory_percent or cpu_percent if available
+                        suspicious_proc = max(processes, key=lambda p: p.get("memory_percent", 0) + p.get("cpu_percent", 0))
+                        pid = suspicious_proc.get("pid")
+                        if pid:
+                            print(f"[SNAPSHOT] Most suspicious process PID: {pid}")
+                            print(snapshot.take_memory_snapshot(pid))
+                            print(snapshot.collect_lsof(pid))
+                # Send event as usual
+                if SEND_MODE == "websocket":
+                    await send_event_ws(event)
+                else:
+                    send_event_rest(event)
+                await asyncio.sleep(INTERVAL)
+            except Exception as e:
+                print(f"[ERROR] Error in main loop: {e}")
+                await asyncio.sleep(INTERVAL)
+    
+    try:
+        asyncio.run(run_agent_with_websocket())
     except KeyboardInterrupt:
         if observer:
             observer.stop()

@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 import logging
 
-from database import get_db, init_db, check_db_connection
+from database import get_db, init_db, check_db_connection, SessionLocal
 from models import Event as EventModel, Agent as AgentModel, Alert as AlertModel
 
 # Configure logging
@@ -250,40 +250,45 @@ async def websocket_endpoint(websocket: WebSocket):
             
             # Store the event in database
             try:
-                db = next(get_db())
-                event = EventCreate(**event_data)
-                
-                # Ensure agent exists
-                agent = db.query(AgentModel).filter(AgentModel.id == event.agent_id).first()
-                if not agent:
-                    # Create agent if it doesn't exist
-                    agent = AgentModel(
-                        id=event.agent_id,
-                        name=f"Agent-{event.agent_id[:8]}",
-                        hostname=event.system.get("hostname", "unknown"),
-                        ip_address=event.system.get("ip_address", "unknown"),
-                        version="1.0.0"
+                # Create a new database session for each event
+                db = SessionLocal()
+                try:
+                    event = EventCreate(**event_data)
+                    
+                    # Ensure agent exists
+                    agent = db.query(AgentModel).filter(AgentModel.id == event.agent_id).first()
+                    if not agent:
+                        # Create agent if it doesn't exist
+                        agent = AgentModel(
+                            id=event.agent_id,
+                            name=f"Agent-{event.agent_id[:8]}",
+                            hostname=event.system.get("hostname", "unknown"),
+                            ip_address=event.system.get("ip_address", "unknown"),
+                            version="1.0.0"
+                        )
+                        db.add(agent)
+                        db.commit()
+                    
+                    db_event = EventModel(
+                        agent_id=event.agent_id,
+                        timestamp=datetime.fromtimestamp(event.timestamp),
+                        event_type="system_scan",
+                        cpu_percent=event.system.get("cpu_percent"),
+                        memory_percent=event.system.get("memory_percent"),
+                        raw_data=event.dict()
                     )
-                    db.add(agent)
+                    db.add(db_event)
                     db.commit()
-                
-                db_event = EventModel(
-                    agent_id=event.agent_id,
-                    timestamp=datetime.fromtimestamp(event.timestamp),
-                    event_type="system_scan",
-                    cpu_percent=event.system.get("cpu_percent"),
-                    memory_percent=event.system.get("memory_percent"),
-                    raw_data=event.dict()
-                )
-                db.add(db_event)
-                db.commit()
-                
-                # Send acknowledgment back to client
-                await websocket.send_text(json.dumps({
-                    "status": "received",
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "event_id": db_event.id
-                }))
+                    
+                    # Send acknowledgment back to client
+                    await websocket.send_text(json.dumps({
+                        "status": "received",
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "event_id": db_event.id
+                    }))
+                    
+                finally:
+                    db.close()
                 
             except Exception as e:
                 logger.error(f"Error storing WebSocket event: {e}")
@@ -296,6 +301,105 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.info("WebSocket client disconnected")
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
+
+@app.post("/agents/{agent_id}/snapshot")
+async def trigger_agent_snapshot(agent_id: str, snapshot_request: dict):
+    """Trigger a snapshot on a specific agent."""
+    try:
+        # Find the agent
+        db = SessionLocal()
+        try:
+            agent = db.query(AgentModel).filter(AgentModel.id == agent_id).first()
+            if not agent:
+                raise HTTPException(status_code=404, detail="Agent not found")
+        finally:
+            db.close()
+        
+        # Connect to agent's snapshot WebSocket
+        import websockets
+        agent_ws_url = f"ws://agent:8080"  # Assuming agent is accessible via Docker network
+        
+        try:
+            async with websockets.connect(agent_ws_url) as ws:
+                # Send snapshot request
+                await ws.send(json.dumps(snapshot_request))
+                
+                # Wait for response
+                response = await ws.recv()
+                result = json.loads(response)
+                
+                return {
+                    "status": "triggered",
+                    "agent_id": agent_id,
+                    "result": result
+                }
+                
+        except Exception as e:
+            logger.error(f"Failed to connect to agent {agent_id}: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to connect to agent: {e}")
+            
+    except Exception as e:
+        logger.error(f"Error triggering snapshot: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/agents/{agent_id}/snapshots")
+async def get_agent_snapshots(agent_id: str):
+    """Get list of snapshots for a specific agent."""
+    try:
+        # This would typically query a database table for snapshots
+        # For now, return a placeholder
+        return {
+            "agent_id": agent_id,
+            "snapshots": [
+                {
+                    "id": "snapshot_1",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "type": "anomaly_triggered",
+                    "files": ["gcore_123_20250704_123456.core", "lsof_123_20250704_123456.txt"]
+                }
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error getting snapshots: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    try:
+        db = SessionLocal()
+        try:
+            # Get basic metrics
+            total_events = db.query(EventModel).count()
+            total_agents = db.query(AgentModel).count()
+            anomaly_events = db.query(EventModel).filter(EventModel.is_anomaly == True).count()
+            
+            # Format as Prometheus metrics
+            metrics_data = f"""# HELP neurosentinel_events_total Total number of events
+# TYPE neurosentinel_events_total counter
+neurosentinel_events_total {total_events}
+
+# HELP neurosentinel_agents_total Total number of agents
+# TYPE neurosentinel_agents_total gauge
+neurosentinel_agents_total {total_agents}
+
+# HELP neurosentinel_anomalies_total Total number of anomaly events
+# TYPE neurosentinel_anomalies_total counter
+neurosentinel_anomalies_total {anomaly_events}
+
+# HELP neurosentinel_up Service health status
+# TYPE neurosentinel_up gauge
+neurosentinel_up 1
+"""
+            return metrics_data
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Error generating metrics: {e}")
+        return f"""# HELP neurosentinel_up Service health status
+# TYPE neurosentinel_up gauge
+neurosentinel_up 0
+"""
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

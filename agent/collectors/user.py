@@ -24,22 +24,31 @@ def collect_last_logins():
 
 def collect_sudo_usage():
     try:
-        output = subprocess.check_output(['grep', 'sudo', '/var/log/auth.log'], text=True)
-        return output
+        if os.path.exists('/var/log/auth.log'):
+            output = subprocess.check_output(['grep', 'sudo', '/var/log/auth.log'], text=True)
+            return output
+        else:
+            return "auth.log not available"
     except Exception as e:
         return f"error: {e}"
 
 def collect_ssh_sessions():
     try:
-        output = subprocess.check_output(['grep', 'sshd', '/var/log/auth.log'], text=True)
-        return output
+        if os.path.exists('/var/log/auth.log'):
+            output = subprocess.check_output(['grep', 'sshd', '/var/log/auth.log'], text=True)
+            return output
+        else:
+            return "auth.log not available"
     except Exception as e:
         return f"error: {e}"
 
 def collect_user_group_changes():
     try:
-        output = subprocess.check_output(['grep', '-E', 'useradd|userdel|groupadd|groupdel', '/var/log/auth.log'], text=True)
-        return output
+        if os.path.exists('/var/log/auth.log'):
+            output = subprocess.check_output(['grep', '-E', 'useradd|userdel|groupadd|groupdel', '/var/log/auth.log'], text=True)
+            return output
+        else:
+            return "auth.log not available"
     except Exception as e:
         return f"error: {e}"
 

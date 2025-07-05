@@ -21,6 +21,9 @@ services:
     environment:
       - SEND_MODE=websocket
       - WS_URL=ws://server:8000/ws/events
+      - SNAPSHOT_WS_PORT=8080
+    ports:
+      - "8080:8080"
     networks:
       - nsnet
 
@@ -36,6 +39,8 @@ services:
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9000"]
     ports:
       - "9000:9000"
+    networks:
+      - nsnet
 
   ml_core_test:
     build:
@@ -44,6 +49,8 @@ services:
     command: ["python", "test_models.py"]
     volumes:
       - ./ml_core:/app
+    networks:
+      - nsnet
 
   ml_core_train:
     build:
@@ -53,6 +60,8 @@ services:
     volumes:
       - ./ml_core:/app
       - ./data:/data
+    networks:
+      - nsnet
 
   dashboard:
     build: ./dashboard
