@@ -1,27 +1,25 @@
-# 🧠 NeuroSentinel  
-### Powered by AI, LLMs, Federated Learning, Threat Intelligence, and Forensics
+# 🧠 NeuroSentinel
+### Autonomous Distributed Cyber Defense Platform
+*Powered by AI, Machine Learning, and Real-time Threat Intelligence*
 
 ---
 
 ## 🔍 Overview
 
-This project is a **next-generation cybersecurity platform** designed to provide **autonomous, intelligent, and distributed defense** across multiple systems and networks. Combining the power of **machine learning**, **large language models (LLMs)**, **federated learning**, **threat intelligence APIs**, and **automated response mechanisms**, the platform detects, analyzes, and reacts to threats in real-time — without human intervention.
+NeuroSentinel is a **next-generation cybersecurity platform** that provides **autonomous, intelligent, and distributed defense** for your **host machine**. The platform combines **machine learning**, **real-time monitoring**, **threat intelligence**, and **automated response mechanisms** to detect, analyze, and react to threats in real-time.
 
-Unlike traditional, centralized security solutions, this system empowers each node to monitor itself, learn local behavior, detect anomalies, and participate in a collaborative learning ecosystem — all while preserving user privacy through **differential privacy**.
+> **Note:** NeuroSentinel is designed and configured to monitor and secure the **host system** (not just the container it runs in). All data collected is from the host machine.
 
----
+### 🎯 Key Features
 
-## 🔑 Key Features
-
-- **Local Behavioral Anomaly Detection** using ML (AutoEncoders, Isolation Forest, etc.)
-- **Federated Learning Engine** for collaborative model training across distributed nodes
-- **Differential Privacy** to protect sensitive data while aggregating models
-- **LLM-Powered Log Analysis** using local language models (LLaMA/Mistral) for natural language summarization of system events and security incidents
-- **Autonomous Threat Response** (block malicious IPs, isolate processes, lock accounts, etc.)
-- **Threat Intelligence Integration** with APIs like VirusTotal, AbuseIPDB, and OTX for enrichment
-- **Real-Time Forensic Snapshot** creation after threat detection
-- **Web-Based Dashboard** (React/Vue) for monitoring agents, alerts, and analysis results
-- **DevOps-Ready** with full Docker support, Prometheus/Grafana observability, and CI/CD pipelines
+- **🔍 Real-time Host Monitoring**: Comprehensive data collection from system metrics, processes, network connections, and security events on the host
+- **🤖 ML-Powered Anomaly Detection**: Local machine learning models (Isolation Forest, AutoEncoder) for real-time threat detection
+- **🌐 Distributed Architecture**: Scalable agent-server architecture with containerized deployment
+- **⚡ Real-time Processing**: WebSocket and REST API support for live data streaming
+- **🛡️ Threat Intelligence**: Integration with external threat feeds and indicators
+- **🚨 Automated Response**: Configurable response actions based on detected threats
+- **📊 Web Dashboard**: Modern React-based interface for monitoring and analysis
+- **📈 Observability**: Prometheus metrics and comprehensive logging
 
 ---
 
@@ -34,6 +32,42 @@ Unlike traditional, centralized security solutions, this system empowers each no
 - **8GB+ RAM**: Recommended for running all services
 - **10GB+ Disk Space**: For containers, models, and data
 
+### Host Monitoring Mode (Recommended)
+
+To monitor and secure your **host machine**, the agent must be run with:
+- `privileged: true` (full access to host resources)
+- `network_mode: host` (uses host's network stack)
+- **Host filesystem and system directories mounted read-only:**
+  - `/:/host:ro`
+  - `/var/run:/var/run:ro`
+  - `/proc:/proc:ro`
+  - `/sys:/sys:ro`
+  - `/var/log:/var/log:ro`
+- Environment variable: `HOST_ROOT=/host`
+
+**Example agent service in `docker-compose.yml`:**
+```yaml
+  agent:
+    build: ./agent
+    privileged: true
+    network_mode: host
+    volumes:
+      - /:/host:ro
+      - /var/run:/var/run:ro
+      - /proc:/proc:ro
+      - /sys:/sys:ro
+      - /var/log:/var/log:ro
+    depends_on:
+      - server
+    environment:
+      - SEND_MODE=websocket
+      - WS_URL=ws://localhost:8000/ws/events
+      - SNAPSHOT_WS_PORT=8080
+      - HOST_ROOT=/host
+    ports:
+      - "8080:8080"
+```
+
 ### Installation & Setup
 
 1. **Clone the repository**
@@ -57,21 +91,58 @@ Unlike traditional, centralized security solutions, this system empowers each no
    make db-init
    ```
 
-5. **Start all services**
-   ```bash
-   docker-compose up -d
-   ```
-
-6. **Generate sample data and train models**
+5. **Generate sample data and train models**
    ```bash
    make generate-sample-data
    make train-isolation-forest
    make train-autoencoder
    ```
 
-### 🎯 Running the Project
+6. **Start all services**
+   ```bash
+   docker-compose up -d
+   ```
 
-#### Start All Services
+7. **Verify system health**
+   ```bash
+   docker-compose ps
+   curl http://localhost:8000/health
+   curl http://localhost:9000/health
+   ```
+
+---
+
+## ✅ Verifying Host Monitoring
+
+To confirm that the agent is monitoring your **host machine** (not just the container):
+
+1. **Run the included test script in the agent container:**
+   ```bash
+   docker exec neurosentinel-agent-1 python3 /app/test_host_monitoring.py
+   ```
+   - You should see output like:
+     - `monitoring_host: True`
+     - Hostname, OS, process list, users, and logs from your host
+     - Real host processes (e.g., `init`, `kthreadd`), users, and log files
+
+2. **Check for real host data:**
+   - Add a file or user on your host, or start a new process
+   - Run the test script again and confirm it appears in the output
+
+---
+
+## 🔒 Security Note
+
+> **Warning:** Running the agent in privileged mode with host mounts gives it full read access to your host system. This is required for full host monitoring, but you should:
+> - Only run trusted code in this mode
+> - Review the agent's code and configuration
+> - Limit access to the agent container and its network
+
+---
+
+## 🎯 Running the Project
+
+### Start All Services
 ```bash
 # Start everything
 docker-compose up -d
@@ -83,7 +154,7 @@ docker-compose ps
 docker-compose logs -f
 ```
 
-#### Access Services
+### Access Services
 
 | Service | URL | Description |
 |---------|-----|-------------|
@@ -91,10 +162,11 @@ docker-compose logs -f
 | **API Server** | http://localhost:8000 | FastAPI backend |
 | **ML Core API** | http://localhost:9000 | ML model serving |
 | **Prometheus** | http://localhost:9090 | Metrics monitoring |
+| **Nginx Gateway** | http://localhost:80 | Reverse proxy |
 | **PostgreSQL** | localhost:5432 | Database |
 | **Redis** | localhost:6379 | Cache/Queue |
 
-#### API Endpoints
+### API Endpoints
 
 ```bash
 # Health check
@@ -103,17 +175,20 @@ curl http://localhost:8000/health
 # Get all events
 curl http://localhost:8000/events
 
-# Get all agents
-curl http://localhost:8000/agents
-
 # ML prediction
 curl -X POST http://localhost:9000/predict \
   -H "Content-Type: application/json" \
-  -d '{"data": {...}}'
+  -d '{"data": {"cpu_usage": 0.5, "memory_usage": 0.6, "network_connections": 10, "process_count": 50}, "model_type": "isolation_forest"}'
+
+# List available models
+curl http://localhost:9000/models
 ```
 
-#### Training ML Models
+---
 
+## 🛠️ Development Commands
+
+### Training ML Models
 ```bash
 # Train Isolation Forest
 make train-isolation-forest
@@ -128,8 +203,7 @@ make quick-train
 make test
 ```
 
-#### Database Management
-
+### Database Management
 ```bash
 # Initialize database
 make db-init
@@ -144,8 +218,7 @@ make db-stats
 make db-reset
 ```
 
-#### Development Commands
-
+### Development Utilities
 ```bash
 # View service status
 make status
@@ -160,15 +233,18 @@ make clean
 make test-local
 ```
 
-### 📊 Monitoring & Observability
+---
 
-#### Check System Health
+## 📊 Monitoring & Observability
+
+### Check System Health
 ```bash
 # All services status
 docker-compose ps
 
 # Service health
 curl http://localhost:8000/health | jq
+curl http://localhost:9000/health | jq
 
 # Database connectivity
 make db-check
@@ -177,7 +253,7 @@ make db-check
 curl http://localhost:9000/health
 ```
 
-#### View Logs
+### View Logs
 ```bash
 # All services
 docker-compose logs -f
@@ -191,62 +267,132 @@ docker-compose logs -f ml_core
 make logs
 ```
 
-#### Metrics & Monitoring
+### Metrics & Monitoring
 - **Prometheus**: http://localhost:9090
-- **Grafana**: Available via Prometheus data source
 - **Application Metrics**: Available via `/metrics` endpoints
+- **Real-time Events**: WebSocket connections for live data
 
-### 🔧 Configuration
+---
 
-#### Environment Variables
+## 🏗️ Architecture
 
-Create `.env` file for custom configuration:
-
-```bash
-# Database
-POSTGRES_DB=neurosentinel
-POSTGRES_USER=neurosentinel
-POSTGRES_PASSWORD=your_password
-
-# Redis
-REDIS_URL=redis://redis:6379
-
-# Server
-SERVER_HOST=0.0.0.0
-SERVER_PORT=8000
-
-# Agent
-AGENT_ID=agent-001
-AGENT_SERVER_URL=http://server:8000
-AGENT_COLLECTION_INTERVAL=30
-
-# ML Core
-ML_CORE_HOST=0.0.0.0
-ML_CORE_PORT=9000
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Agent Node    │◄──►│  Central Server  │◄──►│  ML Core API    │
+│ (Host Monitor)  │    │   (FastAPI)      │    │  (Model Serving)│
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   PostgreSQL    │    │      Redis       │    │   Prometheus    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                                 ▼
+                    ┌──────────────────┐
+                    │   Dashboard      │
+                    │   (React UI)     │
+                    └──────────────────┘
 ```
 
-#### Model Configuration
+---
 
-Edit config files in `ml_core/data/configs/`:
+## 📂 Project Structure
+
+```
+NeuroSentinel/
+├── agent/                 # Lightweight monitoring agent
+│   ├── collectors/        # Data collection modules
+│   │   ├── system.py      # System metrics collection
+│   │   ├── process.py     # Process monitoring
+│   │   ├── network.py     # Network connections
+│   │   ├── file.py        # File system monitoring
+│   │   ├── user.py        # User activity
+│   │   ├── logs.py        # Log file monitoring
+│   │   ├── security_tools.py # Security tool integration
+│   │   └── snapshot.py    # System snapshot capture
+│   ├── agent.py          # Main agent daemon
+│   └── Dockerfile        # Agent container
+├── server/               # Central server (FastAPI)
+│   ├── main.py          # API server with WebSocket support
+│   ├── models.py        # Database models
+│   ├── database.py      # Database connection
+│   └── Dockerfile       # Server container
+├── ml_core/             # Machine learning module
+│   ├── detectors/       # Anomaly detection algorithms
+│   │   ├── isolation_forest.py
+│   │   └── autoencoder_detector.py
+│   ├── models/          # Trained model artifacts
+│   ├── preprocessing/   # Data preprocessing
+│   ├── utils/           # ML utilities
+│   ├── train_models.py  # Training script
+│   └── main.py         # ML API server
+├── dashboard/           # React frontend
+│   ├── src/            # React components
+│   └── package.json    # Frontend dependencies
+├── data/               # Training and validation data
+│   ├── raw/           # Raw data
+│   ├── processed/     # Processed data
+│   └── configs/       # Model configurations
+├── shared/            # Shared utilities and schemas
+├── nginx/             # Nginx configuration
+├── docker-compose.yml # Service orchestration
+└── Makefile          # Development commands
+```
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+The system uses Docker Compose for configuration. Key environment variables:
+
+```yaml
+# Database
+POSTGRES_DB=neurosentinel
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# Server
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/neurosentinel
+
+# Agent
+SEND_MODE=websocket
+WS_URL=ws://server:8000/ws/events
+SNAPSHOT_WS_PORT=8080
+
+# ML Core
+PYTHONUNBUFFERED=1
+```
+
+### Model Configuration
+
+Edit config files in `data/configs/`:
 
 ```json
 {
-  "model_type": "autoencoder",
+  "model_type": "isolation_forest",
   "model_params": {
-    "hidden_dims": [64, 32, 16],
-    "dropout_rate": 0.2,
-    "activation": "relu"
+    "contamination": 0.1,
+    "random_state": 42
   },
   "training": {
-    "epochs": 50,
-    "batch_size": 32
+    "test_size": 0.2,
+    "random_state": 42
   }
 }
 ```
 
-### 🧪 Testing
+---
 
-#### Run All Tests
+## 🧪 Testing
+
+### Run All Tests
 ```bash
 # ML core tests
 make test
@@ -258,11 +404,11 @@ make test-local
 make quick-train
 ```
 
-#### Manual Testing
+### Manual Testing
 
 ```bash
 # Test agent data collection
-docker-compose logs agent
+docker logs neurosentinel-agent-1
 
 # Test server API
 curl http://localhost:8000/health
@@ -270,15 +416,17 @@ curl http://localhost:8000/health
 # Test ML predictions
 curl -X POST http://localhost:9000/predict \
   -H "Content-Type: application/json" \
-  -d '{"data": {"cpu_percent": 85, "memory_percent": 90}}'
+  -d '{"data": {"cpu_usage": 0.5, "memory_usage": 0.6, "network_connections": 10, "process_count": 50}, "model_type": "isolation_forest"}'
 
 # Test WebSocket connection
-wscat -c ws://localhost:8000/ws
+wscat -c ws://localhost:8000/ws/events
 ```
 
-### 🚨 Troubleshooting
+---
 
-#### Common Issues
+## 🚨 Troubleshooting
+
+### Common Issues
 
 **1. Database Connection Errors**
 ```bash
@@ -302,7 +450,7 @@ docker-compose up -d
 **3. ML Training Failures**
 ```bash
 # Check config files
-ls -la ml_core/data/configs/
+ls -la data/configs/
 
 # Regenerate sample data
 make generate-sample-data
@@ -323,7 +471,7 @@ lsof -i :5173
 sudo systemctl stop conflicting-service
 ```
 
-#### Log Analysis
+### Log Analysis
 
 ```bash
 # Check for errors
@@ -336,9 +484,11 @@ docker-compose logs | grep -i warn
 docker-compose logs -f server | grep -i error
 ```
 
-### 🧹 Cleanup
+---
 
-#### Stop All Services
+## 🧹 Cleanup
+
+### Stop All Services
 ```bash
 # Stop and remove containers
 docker-compose down
@@ -350,7 +500,7 @@ docker-compose down -v
 docker-compose down -v --rmi all
 ```
 
-#### Clean Development Environment
+### Clean Development Environment
 ```bash
 # Clean temporary files
 make clean
@@ -361,503 +511,73 @@ docker system prune -a
 # Remove volumes
 docker volume prune
 ```
-
----
-
-## 🧱 Architecture Overview
-
-```
-+----------------+        +--------------------+        +-----------------+
-|   Agent Node   | <----> | Central Intelligence| <----> |  Threat APIs    |
-|  (Python App)  |        |   (FastAPI Server)  |        |  (VirusTotal…)  |
-+----------------+        +--------------------+        +-----------------+
-       |                            |                            |
-       |     Federated Learning     |                            |
-       |--------------------------->|                            |
-       |                            |                            |
-+------+----------------------------+----------------------------+
-|              ML + LLM Core (Analysis Engine)                  |
-|  - Autoencoder, IsolationForest, Opacus for DP                |
-|  - LLaMA/Mistral for log summarization and detection          |
-+---------------------------------------------------------------+
-```
-
----
-
-## 📂 Components
-
-| Module              | Description |
-|---------------------|-------------|
-| **Agent Node**      | Collects logs, monitors behavior, runs local ML models, performs automated actions, and takes forensic snapshots. |
-| **FastAPI Backend** | Central server to manage agents, collect alerts, aggregate models, and interact with the dashboard. |
-| **ML Engine**       | Trains anomaly detection models locally and aggregates them using Federated Learning with DP. |
-| **LLM Engine**      | Parses and summarizes system logs using embedded language models to extract threats in plain English. |
-| **Threat Intel**    | Queries VirusTotal, AbuseIPDB, and Shodan to enrich IP/domain/file analysis. |
-| **Forensic Module** | Captures system state snapshots (RAM, open connections, process tree, etc.) for post-incident investigation. |
-| **Dashboard**       | Web UI for visualizing node health, alerts, threat intelligence, model performance, and policies. |
 
 ---
 
 ## 🛠️ Technologies Used
 
 - **Backend**: FastAPI, PostgreSQL, Redis
-- **Frontend**: React.js or Vue.js, WebSockets
-- **Machine Learning**: Scikit-learn, PyTorch, Opacus (DP)
-- **LLM Integration**: LLaMA, Mistral, llama.cpp or Ollama
-- **Security & Forensics**: psutil, scapy, watchdog, gcore, volatility
-- **DevOps**: Docker, Docker Compose, Prometheus, Grafana, GitHub Actions
-
----
-
-## 🔄 Comparison with Industry Tools
-
-| Feature                                       | This Project ✅                              | Industry Tools (Darktrace, Wazuh, etc.) ❌ |
-|----------------------------------------------|----------------------------------------------|--------------------------------------------|
-| Distributed Autonomous Agents                | ✅ Each node acts independently               | ❌ Centralized detection only               |
-| Federated Learning                           | ✅ Collaborative model training               | ❌ Not supported                            |
-| Differential Privacy                         | ✅ Protects sensitive data in training        | ❌ Not implemented                          |
-| LLM-Based Log Summarization (e.g. LLaMA)     | ✅ Embedded language model for log analysis   | 🔶 Rare (experimental in research only)     |
-| Forensic Snapshot Engine                     | ✅ Real-time memory/process dump              | ❌ Requires manual or external tools        |
-| Open Source + Modular Architecture           | ✅ Fully modular & extensible                 | ❌ Mostly closed-source or limited modules  |
-| Threat Intel Enrichment with APIs            | ✅ Integrated with public APIs                | ✅ Available but often commercial           |
-| DevOps-Friendly (Docker, CI/CD, Monitoring)  | ✅ Full stack ready for deployment            | ❌ Often heavy or proprietary stack         |
+- **Frontend**: React.js, Vite
+- **Machine Learning**: Scikit-learn, NumPy, Pandas
+- **Monitoring**: Prometheus, Docker
+- **DevOps**: Docker Compose, Make
 
 ---
 
 ## 🚧 Development Roadmap
 
-### Phase 1 – MVP
+### Phase 1 – MVP ✅
 - [x] Basic agent for monitoring logs and files
 - [x] FastAPI backend with alert ingestion and REST API
 - [x] Basic dashboard UI
 - [x] ML-based local anomaly detection
 - [x] Database integration and persistence
+- [x] Real-time WebSocket communication
+- [x] System snapshot capabilities
 
-### Phase 2 – Core Intelligence
-- [ ] Federated model sharing with DP
-- [ ] Snapshot module for forensic capture
+### Phase 2 – Enhanced Intelligence 🚧
+- [ ] Federated model sharing
 - [ ] Enhanced threat detection algorithms
+- [ ] Advanced forensic capabilities
+- [ ] Threat intelligence API integration
 
-### Phase 3 – LLM & Threat API Integration
+### Phase 3 – Advanced Features 📋
 - [ ] LLM-powered log summarization
-- [ ] VirusTotal and AbuseIPDB enrichment
-- [ ] AI-generated threat reports in dashboard
-
-### Phase 4 – Privacy and Scalability
-- [ ] Differential Privacy with Opacus
-- [ ] Role-based access control
-- [ ] Multi-node scalability with Kubernetes (optional)
+- [ ] Differential privacy for federated learning
+- [ ] Advanced dashboard features
+- [ ] Multi-node scalability
 
 ---
 
-## 🙋 About the Author
+## 🙋 About
 
-This project was designed and developed by PeymanSohi, a DevOps & Python Engineer passionate about AI, cybersecurity, and building resilient distributed systems.
+This project was designed and developed by **PeymanSohi**, a DevOps & Python Engineer passionate about AI, cybersecurity, and building resilient distributed systems.
 
 > *"Security is not just a feature — it's a self-adaptive, intelligent organism in the modern cloud era."*
 
 ---
 
-## Project Overview
-A smart, distributed cyber defense platform that learns system behaviors, detects and predicts threats, and responds autonomously when needed. It uses collaborative learning, large language models (LLMs), forensic analysis, and threat intelligence APIs to enhance its defense power.
+## 📄 License
 
-## Directory Structure
-
-- `agent/` — Distributed agent node (collects, monitors, reports)
-- `server/` — Central FastAPI server (API, aggregation, orchestration)
-- `ml_core/` — ML engine (anomaly detection, federated learning)
-- `llm_core/` — LLM-based log analysis, summarization, reporting
-- `forensics/` — Forensic snapshot and analysis tools
-- `threat_api/` — Threat intelligence API integrations
-- `dashboard/` — Frontend dashboard (React/Vite)
-- `shared/` — Shared code (schemas, utils, config)
-
-See module READMEs for more details.
-
-# NeuroSentinel - Autonomous Distributed Cyber Defense Platform
-
-A comprehensive, ML-powered cyber defense platform that provides real-time threat detection, anomaly analysis, and automated response capabilities.
-
-## 🚀 Features
-
-- **Advanced System Monitoring**: Comprehensive data collection from system, process, network, file, user, and security tools
-- **ML-Powered Anomaly Detection**: Local machine learning models for real-time threat detection
-- **Distributed Architecture**: Scalable agent-server architecture with containerized deployment
-- **Real-time Processing**: WebSocket and REST API support for live data streaming
-- **Threat Intelligence**: Integration with external threat feeds and indicators
-- **Automated Response**: Configurable response actions based on detected threats
-
-## 🏗️ Architecture
-
-```
-NeuroSentinel/
-├── agent/                 # Lightweight monitoring agent
-│   ├── collectors/        # Data collection modules
-│   ├── agent.py          # Main agent daemon
-│   └── Dockerfile        # Agent container
-├── server/               # Central server (FastAPI)
-│   ├── main.py          # API server
-│   └── Dockerfile       # Server container
-├── ml_core/             # Machine learning module
-│   ├── detectors/       # Anomaly detection algorithms
-│   ├── models/          # Neural network models
-│   ├── preprocessing/   # Data preprocessing
-│   ├── utils/           # ML utilities
-│   └── train_models.py  # Training script
-├── dashboard/           # React frontend
-├── data/               # Training and validation data
-├── models/             # Trained model artifacts
-└── docker-compose.yml  # Orchestration
-```
-
-## 🛠️ Quick Start
-
-### Prerequisites
-
-- **Docker & Docker Compose**: Version 20.10+ and 2.0+
-- **Git**: For cloning the repository
-- **8GB+ RAM**: Recommended for running all services
-- **10GB+ Disk Space**: For containers, models, and data
-
-### Installation & Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/peymansohi/NeuroSentinel.git
-   cd NeuroSentinel
-   ```
-
-2. **Build all containers**
-   ```bash
-   docker-compose build
-   ```
-
-3. **Start core infrastructure**
-   ```bash
-   docker-compose up -d postgres redis prometheus
-   ```
-
-4. **Initialize the database**
-   ```bash
-   make db-init
-   ```
-
-5. **Start all services**
-   ```bash
-   docker-compose up -d
-   ```
-
-6. **Generate sample data and train models**
-   ```bash
-   make generate-sample-data
-   make train-isolation-forest
-   make train-autoencoder
-   ```
-
-### 🎯 Running the Project
-
-#### Start All Services
-```bash
-# Start everything
-docker-compose up -d
-
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs -f
-```
-
-#### Access Services
-
-| Service | URL | Description |
-|---------|-----|-------------|
-| **Dashboard** | http://localhost:5173 | React frontend |
-| **API Server** | http://localhost:8000 | FastAPI backend |
-| **ML Core API** | http://localhost:9000 | ML model serving |
-| **Prometheus** | http://localhost:9090 | Metrics monitoring |
-| **PostgreSQL** | localhost:5432 | Database |
-| **Redis** | localhost:6379 | Cache/Queue |
-
-#### API Endpoints
-
-```bash
-# Health check
-curl http://localhost:8000/health
-
-# Get all events
-curl http://localhost:8000/events
-
-# Get all agents
-curl http://localhost:8000/agents
-
-# ML prediction
-curl -X POST http://localhost:9000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"data": {...}}'
-```
-
-#### Training ML Models
-
-```bash
-# Train Isolation Forest
-make train-isolation-forest
-
-# Train AutoEncoder
-make train-autoencoder
-
-# Quick training with minimal data
-make quick-train
-
-# Run tests
-make test
-```
-
-#### Database Management
-
-```bash
-# Initialize database
-make db-init
-
-# Check database status
-make db-check
-
-# View database stats
-make db-stats
-
-# Reset database (DESTRUCTIVE)
-make db-reset
-```
-
-#### Development Commands
-
-```bash
-# View service status
-make status
-
-# View recent logs
-make logs
-
-# Clean up temporary files
-make clean
-
-# Run tests locally
-make test-local
-```
-
-### 📊 Monitoring & Observability
-
-#### Check System Health
-```bash
-# All services status
-docker-compose ps
-
-# Service health
-curl http://localhost:8000/health | jq
-
-# Database connectivity
-make db-check
-
-# ML API health
-curl http://localhost:9000/health
-```
-
-#### View Logs
-```bash
-# All services
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f server
-docker-compose logs -f agent
-docker-compose logs -f ml_core
-
-# Recent training logs
-make logs
-```
-
-#### Metrics & Monitoring
-- **Prometheus**: http://localhost:9090
-- **Grafana**: Available via Prometheus data source
-- **Application Metrics**: Available via `/metrics` endpoints
-
-### 🔧 Configuration
-
-#### Environment Variables
-
-Create `.env` file for custom configuration:
-
-```bash
-# Database
-POSTGRES_DB=neurosentinel
-POSTGRES_USER=neurosentinel
-POSTGRES_PASSWORD=your_password
-
-# Redis
-REDIS_URL=redis://redis:6379
-
-# Server
-SERVER_HOST=0.0.0.0
-SERVER_PORT=8000
-
-# Agent
-AGENT_ID=agent-001
-AGENT_SERVER_URL=http://server:8000
-AGENT_COLLECTION_INTERVAL=30
-
-# ML Core
-ML_CORE_HOST=0.0.0.0
-ML_CORE_PORT=9000
-```
-
-#### Model Configuration
-
-Edit config files in `ml_core/data/configs/`:
-
-```json
-{
-  "model_type": "autoencoder",
-  "model_params": {
-    "hidden_dims": [64, 32, 16],
-    "dropout_rate": 0.2,
-    "activation": "relu"
-  },
-  "training": {
-    "epochs": 50,
-    "batch_size": 32
-  }
-}
-```
-
-### 🧪 Testing
-
-#### Run All Tests
-```bash
-# ML core tests
-make test
-
-# Local tests (requires venv)
-make test-local
-
-# Quick training test
-make quick-train
-```
-
-#### Manual Testing
-
-```bash
-# Test agent data collection
-docker-compose logs agent
-
-# Test server API
-curl http://localhost:8000/health
-
-# Test ML predictions
-curl -X POST http://localhost:9000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"data": {"cpu_percent": 85, "memory_percent": 90}}'
-
-# Test WebSocket connection
-wscat -c ws://localhost:8000/ws
-```
-
-### 🚨 Troubleshooting
-
-#### Common Issues
-
-**1. Database Connection Errors**
-```bash
-# Reinitialize database
-make db-init
-
-# Check database status
-make db-check
-```
-
-**2. Container Build Failures**
-```bash
-# Clean rebuild
-docker-compose build --no-cache
-
-# Remove all containers and volumes
-docker-compose down -v
-docker-compose up -d
-```
-
-**3. ML Training Failures**
-```bash
-# Check config files
-ls -la ml_core/data/configs/
-
-# Regenerate sample data
-make generate-sample-data
-
-# Clean and retrain
-make clean
-make train-isolation-forest
-```
-
-**4. Port Conflicts**
-```bash
-# Check what's using ports
-lsof -i :8000
-lsof -i :9000
-lsof -i :5173
-
-# Stop conflicting services
-sudo systemctl stop conflicting-service
-```
-
-#### Log Analysis
-
-```bash
-# Check for errors
-docker-compose logs | grep -i error
-
-# Check for warnings
-docker-compose logs | grep -i warn
-
-# Follow specific service
-docker-compose logs -f server | grep -i error
-```
-
-### 🧹 Cleanup
-
-#### Stop All Services
-```bash
-# Stop and remove containers
-docker-compose down
-
-# Stop and remove containers + volumes
-docker-compose down -v
-
-# Stop and remove containers + volumes + images
-docker-compose down -v --rmi all
-```
-
-#### Clean Development Environment
-```bash
-# Clean temporary files
-make clean
-
-# Remove all containers
-docker system prune -a
-
-# Remove volumes
-docker volume prune
-```
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 📜 License
+## 🤝 Contributing
 
-This project is licensed under the **Apache License 2.0**.  
-See the [LICENSE](LICENSE) file for full details.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-- ✅ Free for commercial use  
-- ✅ Open to contributions and forks  
-- ✅ Includes patent grant protection  
-- ✅ Requires proper attribution
+---
 
-> By using this project, you agree not to use it for malicious or unethical purposes.
+## 📞 Support
+
+For support, please open an issue on GitHub or contact the maintainer.
+
+---
+
+*NeuroSentinel - Defending the digital frontier with intelligent automation.* 🛡️
 

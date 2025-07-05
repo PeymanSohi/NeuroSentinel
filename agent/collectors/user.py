@@ -1,6 +1,7 @@
 import os
 import pwd
 import grp
+import psutil
 import subprocess
 import glob
 from datetime import datetime
@@ -87,16 +88,117 @@ def collect_user_journalctl(lines=200):
 
 def collect_user_activity():
     """
-    Collect logins, sudo, SSH, user/group changes, and related logs from /var/log and journalctl.
+    Collect user information, logged in users, groups, sudoers, cron jobs.
     Returns a dict.
     """
-    result = {"timestamp": datetime.utcnow().isoformat()}
-    result["logged_in_users"] = collect_logged_in_users()
-    result["last_logins"] = collect_last_logins()
-    result["sudo_usage"] = collect_sudo_usage()
-    result["ssh_sessions"] = collect_ssh_sessions()
-    result["user_group_changes"] = collect_user_group_changes()
-    result["users_groups"] = collect_users_groups()
-    result["user_logs"] = collect_user_logs()
-    result["user_journalctl"] = collect_user_journalctl()
-    return result
+    try:
+        # Check if we're monitoring host system
+        host_root = os.getenv('HOST_ROOT', '/')
+        monitoring_host = host_root != '/'
+        
+        # Get logged in users
+        logged_users = []
+        try:
+            for user in psutil.users():
+                logged_users.append({
+                    "name": user.name,
+                    "terminal": user.terminal,
+                    "host": user.host,
+                    "started": datetime.fromtimestamp(user.started).isoformat(),
+                    "pid": user.pid
+                })
+        except Exception as e:
+            logged_users = [{"error": f"Could not get logged users: {str(e)}"}]
+        
+        # Get all users
+        all_users = []
+        try:
+            for user in pwd.getpwall():
+                all_users.append({
+                    "name": user.pw_name,
+                    "uid": user.pw_uid,
+                    "gid": user.pw_gid,
+                    "home": user.pw_dir,
+                    "shell": user.pw_shell
+                })
+        except Exception as e:
+            all_users = [{"error": f"Could not get users: {str(e)}"}]
+        
+        # Get all groups
+        all_groups = []
+        try:
+            for group in grp.getgrall():
+                all_groups.append({
+                    "name": group.gr_name,
+                    "gid": group.gr_gid,
+                    "members": group.gr_mem
+                })
+        except Exception as e:
+            all_groups = [{"error": f"Could not get groups: {str(e)}"}]
+        
+        # Get sudoers file info
+        sudoers_info = {}
+        sudoers_path = '/etc/sudoers'
+        if monitoring_host:
+            sudoers_path = os.path.join(host_root, 'etc/sudoers')
+        
+        if os.path.exists(sudoers_path):
+            try:
+                stat = os.stat(sudoers_path)
+                sudoers_info = {
+                    "exists": True,
+                    "size": stat.st_size,
+                    "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                    "accessible": True
+                }
+            except Exception as e:
+                sudoers_info = {
+                    "exists": True,
+                    "error": str(e),
+                    "accessible": False
+                }
+        else:
+            sudoers_info = {
+                "exists": False,
+                "accessible": False
+            }
+        
+        # Get cron jobs
+        cron_jobs = []
+        try:
+            # Check system crontab
+            cron_paths = ['/etc/crontab']
+            if monitoring_host:
+                cron_paths = [os.path.join(host_root, 'etc/crontab')]
+            
+            for cron_path in cron_paths:
+                if os.path.exists(cron_path):
+                    try:
+                        with open(cron_path, 'r') as f:
+                            lines = f.readlines()
+                            for line in lines:
+                                if line.strip() and not line.startswith('#'):
+                                    cron_jobs.append({
+                                        "file": cron_path,
+                                        "line": line.strip()
+                                    })
+                    except Exception as e:
+                        cron_jobs.append({
+                            "file": cron_path,
+                            "error": f"Could not read: {str(e)}"
+                        })
+        except Exception as e:
+            cron_jobs = [{"error": f"Could not get cron jobs: {str(e)}"}]
+        
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "logged_users": logged_users,
+            "all_users": all_users,
+            "all_groups": all_groups,
+            "sudoers": sudoers_info,
+            "cron_jobs": cron_jobs,
+            "monitoring_host": monitoring_host,
+            "host_root": host_root
+        }
+    except Exception as e:
+        return {"error": str(e)}

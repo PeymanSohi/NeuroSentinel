@@ -16,16 +16,23 @@ services:
 
   agent:
     build: ./agent
+    privileged: true
+    network_mode: host
+    volumes:
+      - /:/host:ro
+      - /var/run:/var/run:ro
+      - /proc:/proc:ro
+      - /sys:/sys:ro
+      - /var/log:/var/log:ro
     depends_on:
       - server
     environment:
       - SEND_MODE=websocket
-      - WS_URL=ws://server:8000/ws/events
+      - WS_URL=ws://localhost:8000/ws/events
       - SNAPSHOT_WS_PORT=8080
+      - HOST_ROOT=/host
     ports:
       - "8080:8080"
-    networks:
-      - nsnet
 
   ml_core:
     build:

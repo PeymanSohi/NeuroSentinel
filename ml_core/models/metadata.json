@@ -89,6 +89,36 @@
       "status": "saved",
       "filepath": "models/isolation_forest_experiment_20250704_211903/model.joblib",
       "updated_at": "2025-07-04T21:19:03.552750"
+    },
+    "isolation_forest_model_v20250705_154630": {
+      "name": "isolation_forest_model",
+      "type": "isolation_forest",
+      "version": "20250705_154630",
+      "description": "Trained on 2 samples",
+      "created_at": "2025-07-05T15:46:30.245918",
+      "status": "saved",
+      "filepath": "models/isolation_forest_experiment_20250705_154630/model.joblib",
+      "updated_at": "2025-07-05T15:46:30.275522"
+    },
+    "isolation_forest_model_v20250705_154634": {
+      "name": "isolation_forest_model",
+      "type": "isolation_forest",
+      "version": "20250705_154634",
+      "description": "Trained on 2 samples",
+      "created_at": "2025-07-05T15:46:34.666637",
+      "status": "saved",
+      "filepath": "models/isolation_forest_experiment_20250705_154634/model.joblib",
+      "updated_at": "2025-07-05T15:46:34.690352"
+    },
+    "autoencoder_model_v20250705_154638": {
+      "name": "autoencoder_model",
+      "type": "autoencoder",
+      "version": "20250705_154638",
+      "description": "Trained on 2 samples",
+      "created_at": "2025-07-05T15:46:38.337112",
+      "status": "saved",
+      "filepath": "models/autoencoder_experiment_20250705_154637/model.joblib",
+      "updated_at": "2025-07-05T15:46:38.339057"
     }
   },
   "versions": {
@@ -100,10 +130,13 @@
       "20250704_194346",
       "20250704_202838",
       "20250704_210739",
-      "20250704_211903"
+      "20250704_211903",
+      "20250705_154630",
+      "20250705_154634"
     ],
     "autoencoder_model": [
-      "20250704_195322"
+      "20250704_195322",
+      "20250705_154638"
     ]
   }
 }

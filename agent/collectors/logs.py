@@ -79,3 +79,83 @@ def collect_system_logs():
         result["service_logs_error"] = str(e)
     
     return result
+
+
+def collect_log_info():
+    """
+    Collect log file information and recent entries.
+    Returns a dict.
+    """
+    try:
+        # Check if we're monitoring host system
+        host_root = os.getenv('HOST_ROOT', '/')
+        monitoring_host = host_root != '/'
+        
+        log_files = []
+        log_entries = []
+        
+        # Common log file paths
+        log_paths = [
+            '/var/log/auth.log',
+            '/var/log/syslog',
+            '/var/log/messages',
+            '/var/log/secure',
+            '/var/log/kern.log',
+            '/var/log/dmesg'
+        ]
+        
+        # Adjust paths for host monitoring
+        if monitoring_host:
+            log_paths = [os.path.join(host_root, path.lstrip('/')) for path in log_paths]
+        
+        for log_path in log_paths:
+            if os.path.exists(log_path):
+                try:
+                    # Get file info
+                    stat = os.stat(log_path)
+                    log_files.append({
+                        "path": log_path,
+                        "size": stat.st_size,
+                        "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                        "accessible": True
+                    })
+                    
+                    # Read last few lines
+                    try:
+                        with open(log_path, 'r', errors='ignore') as f:
+                            lines = f.readlines()
+                            recent_lines = lines[-10:] if len(lines) > 10 else lines
+                            log_entries.extend([{
+                                "file": log_path,
+                                "line": line.strip(),
+                                "timestamp": datetime.utcnow().isoformat()
+                            } for line in recent_lines if line.strip()])
+                    except Exception as e:
+                        log_entries.append({
+                            "file": log_path,
+                            "error": f"Could not read file: {str(e)}",
+                            "timestamp": datetime.utcnow().isoformat()
+                        })
+                        
+                except Exception as e:
+                    log_files.append({
+                        "path": log_path,
+                        "error": str(e),
+                        "accessible": False
+                    })
+            else:
+                log_files.append({
+                    "path": log_path,
+                    "accessible": False,
+                    "error": "File not found"
+                })
+        
+        return {
+            "timestamp": datetime.utcnow().isoformat(),
+            "log_files": log_files,
+            "recent_entries": log_entries[:50],  # Limit to 50 entries
+            "monitoring_host": monitoring_host,
+            "host_root": host_root
+        }
+    except Exception as e:
+        return {"error": str(e)}
