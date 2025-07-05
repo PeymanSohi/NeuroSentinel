@@ -1,6 +1,7 @@
 import os
 import glob
 import subprocess
+import platform
 from datetime import datetime
 
 LOG_DIRS = ["/var/log"]
@@ -90,19 +91,41 @@ def collect_log_info():
         # Check if we're monitoring host system
         host_root = os.getenv('HOST_ROOT', '/')
         monitoring_host = host_root != '/'
+        current_os = platform.system().lower()
         
         log_files = []
         log_entries = []
         
-        # Common log file paths
-        log_paths = [
-            '/var/log/auth.log',
-            '/var/log/syslog',
-            '/var/log/messages',
-            '/var/log/secure',
-            '/var/log/kern.log',
-            '/var/log/dmesg'
-        ]
+        # Platform-specific log paths
+        if current_os == "linux":
+            log_paths = [
+                '/var/log/auth.log',
+                '/var/log/syslog',
+                '/var/log/messages',
+                '/var/log/secure',
+                '/var/log/kern.log',
+                '/var/log/dmesg'
+            ]
+        elif current_os == "darwin":  # macOS
+            log_paths = [
+                '/var/log/system.log',
+                '/var/log/secure.log',
+                '/var/log/auth.log',
+                '/Library/Logs/DiagnosticReports/',
+                '/var/log/asl/'
+            ]
+        elif current_os == "windows":
+            # Windows Event Log paths (would need additional libraries)
+            log_paths = [
+                'C:\\Windows\\System32\\winevt\\Logs\\',
+                'C:\\Windows\\System32\\config\\'
+            ]
+        else:
+            # Generic fallback
+            log_paths = [
+                '/var/log/',
+                '/tmp/'
+            ]
         
         # Adjust paths for host monitoring
         if monitoring_host:
@@ -120,22 +143,39 @@ def collect_log_info():
                         "accessible": True
                     })
                     
-                    # Read last few lines
-                    try:
-                        with open(log_path, 'r', errors='ignore') as f:
-                            lines = f.readlines()
-                            recent_lines = lines[-10:] if len(lines) > 10 else lines
-                            log_entries.extend([{
+                    # Read last few lines (only for text files)
+                    if os.path.isfile(log_path) and not log_path.endswith('/'):
+                        try:
+                            with open(log_path, 'r', errors='ignore') as f:
+                                lines = f.readlines()
+                                recent_lines = lines[-10:] if len(lines) > 10 else lines
+                                log_entries.extend([{
+                                    "file": log_path,
+                                    "line": line.strip(),
+                                    "timestamp": datetime.utcnow().isoformat()
+                                } for line in recent_lines if line.strip()])
+                        except Exception as e:
+                            log_entries.append({
                                 "file": log_path,
-                                "line": line.strip(),
+                                "error": f"Could not read file: {str(e)}",
                                 "timestamp": datetime.utcnow().isoformat()
-                            } for line in recent_lines if line.strip()])
-                    except Exception as e:
-                        log_entries.append({
-                            "file": log_path,
-                            "error": f"Could not read file: {str(e)}",
-                            "timestamp": datetime.utcnow().isoformat()
-                        })
+                            })
+                    elif os.path.isdir(log_path):
+                        # For directories, list some files
+                        try:
+                            files = os.listdir(log_path)[:5]  # First 5 files
+                            log_entries.append({
+                                "file": log_path,
+                                "note": f"Directory with {len(files)} files",
+                                "sample_files": files,
+                                "timestamp": datetime.utcnow().isoformat()
+                            })
+                        except Exception as e:
+                            log_entries.append({
+                                "file": log_path,
+                                "error": f"Could not list directory: {str(e)}",
+                                "timestamp": datetime.utcnow().isoformat()
+                            })
                         
                 except Exception as e:
                     log_files.append({
@@ -155,7 +195,8 @@ def collect_log_info():
             "log_files": log_files,
             "recent_entries": log_entries[:50],  # Limit to 50 entries
             "monitoring_host": monitoring_host,
-            "host_root": host_root
+            "host_root": host_root,
+            "platform_type": current_os
         }
     except Exception as e:
         return {"error": str(e)}

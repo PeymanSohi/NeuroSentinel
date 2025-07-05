@@ -2,6 +2,7 @@ import os
 import pwd
 import grp
 import psutil
+import platform
 import subprocess
 import glob
 from datetime import datetime
@@ -95,8 +96,9 @@ def collect_user_activity():
         # Check if we're monitoring host system
         host_root = os.getenv('HOST_ROOT', '/')
         monitoring_host = host_root != '/'
+        current_os = platform.system().lower()
         
-        # Get logged in users
+        # Get logged in users (works on all platforms)
         logged_users = []
         try:
             for user in psutil.users():
@@ -110,85 +112,105 @@ def collect_user_activity():
         except Exception as e:
             logged_users = [{"error": f"Could not get logged users: {str(e)}"}]
         
-        # Get all users
+        # Platform-specific user management
         all_users = []
-        try:
-            for user in pwd.getpwall():
-                all_users.append({
-                    "name": user.pw_name,
-                    "uid": user.pw_uid,
-                    "gid": user.pw_gid,
-                    "home": user.pw_dir,
-                    "shell": user.pw_shell
-                })
-        except Exception as e:
-            all_users = [{"error": f"Could not get users: {str(e)}"}]
-        
-        # Get all groups
         all_groups = []
-        try:
-            for group in grp.getgrall():
-                all_groups.append({
-                    "name": group.gr_name,
-                    "gid": group.gr_gid,
-                    "members": group.gr_mem
-                })
-        except Exception as e:
-            all_groups = [{"error": f"Could not get groups: {str(e)}"}]
         
-        # Get sudoers file info
-        sudoers_info = {}
-        sudoers_path = '/etc/sudoers'
-        if monitoring_host:
-            sudoers_path = os.path.join(host_root, 'etc/sudoers')
-        
-        if os.path.exists(sudoers_path):
+        if current_os in ["linux", "darwin"]:  # Linux and macOS
             try:
-                stat = os.stat(sudoers_path)
-                sudoers_info = {
-                    "exists": True,
-                    "size": stat.st_size,
-                    "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                    "accessible": True
-                }
+                # Get all users (Unix-style)
+                for user in pwd.getpwall():
+                    all_users.append({
+                        "name": user.pw_name,
+                        "uid": user.pw_uid,
+                        "gid": user.pw_gid,
+                        "home": user.pw_dir,
+                        "shell": user.pw_shell
+                    })
             except Exception as e:
+                all_users = [{"error": f"Could not get users: {str(e)}"}]
+            
+            try:
+                # Get all groups (Unix-style)
+                for group in grp.getgrall():
+                    all_groups.append({
+                        "name": group.gr_name,
+                        "gid": group.gr_gid,
+                        "members": group.gr_mem
+                    })
+            except Exception as e:
+                all_groups = [{"error": f"Could not get groups: {str(e)}"}]
+        
+        elif current_os == "windows":
+            try:
+                # Windows user management (would need additional libraries)
+                # For now, we'll use a basic approach
+                all_users = [{"note": "Windows user enumeration requires additional setup"}]
+                all_groups = [{"note": "Windows group enumeration requires additional setup"}]
+            except Exception as e:
+                all_users = [{"error": f"Could not get Windows users: {str(e)}"}]
+                all_groups = [{"error": f"Could not get Windows groups: {str(e)}"}]
+        
+        # Platform-specific file checks
+        sudoers_info = {}
+        cron_jobs = []
+        
+        if current_os in ["linux", "darwin"]:
+            # Check sudoers file (Unix systems)
+            sudoers_path = '/etc/sudoers'
+            if monitoring_host:
+                sudoers_path = os.path.join(host_root, 'etc/sudoers')
+            
+            if os.path.exists(sudoers_path):
+                try:
+                    stat = os.stat(sudoers_path)
+                    sudoers_info = {
+                        "exists": True,
+                        "size": stat.st_size,
+                        "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                        "accessible": True
+                    }
+                except Exception as e:
+                    sudoers_info = {
+                        "exists": True,
+                        "error": str(e),
+                        "accessible": False
+                    }
+            else:
                 sudoers_info = {
-                    "exists": True,
-                    "error": str(e),
+                    "exists": False,
                     "accessible": False
                 }
-        else:
-            sudoers_info = {
-                "exists": False,
-                "accessible": False
-            }
-        
-        # Get cron jobs
-        cron_jobs = []
-        try:
-            # Check system crontab
-            cron_paths = ['/etc/crontab']
-            if monitoring_host:
-                cron_paths = [os.path.join(host_root, 'etc/crontab')]
             
-            for cron_path in cron_paths:
-                if os.path.exists(cron_path):
-                    try:
-                        with open(cron_path, 'r') as f:
-                            lines = f.readlines()
-                            for line in lines:
-                                if line.strip() and not line.startswith('#'):
-                                    cron_jobs.append({
-                                        "file": cron_path,
-                                        "line": line.strip()
-                                    })
-                    except Exception as e:
-                        cron_jobs.append({
-                            "file": cron_path,
-                            "error": f"Could not read: {str(e)}"
-                        })
-        except Exception as e:
-            cron_jobs = [{"error": f"Could not get cron jobs: {str(e)}"}]
+            # Check cron jobs (Unix systems)
+            try:
+                cron_paths = ['/etc/crontab']
+                if monitoring_host:
+                    cron_paths = [os.path.join(host_root, 'etc/crontab')]
+                
+                for cron_path in cron_paths:
+                    if os.path.exists(cron_path):
+                        try:
+                            with open(cron_path, 'r') as f:
+                                lines = f.readlines()
+                                for line in lines:
+                                    if line.strip() and not line.startswith('#'):
+                                        cron_jobs.append({
+                                            "file": cron_path,
+                                            "line": line.strip()
+                                        })
+                        except Exception as e:
+                            cron_jobs.append({
+                                "file": cron_path,
+                                "error": f"Could not read: {str(e)}"
+                            })
+            except Exception as e:
+                cron_jobs = [{"error": f"Could not get cron jobs: {str(e)}"}]
+        
+        elif current_os == "windows":
+            # Windows Task Scheduler equivalent
+            sudoers_info = {"note": "Windows uses different privilege management"}
+            cron_jobs = [{"note": "Windows uses Task Scheduler instead of cron"}]
         
         return {
             "timestamp": datetime.utcnow().isoformat(),
@@ -198,7 +220,8 @@ def collect_user_activity():
             "sudoers": sudoers_info,
             "cron_jobs": cron_jobs,
             "monitoring_host": monitoring_host,
-            "host_root": host_root
+            "host_root": host_root,
+            "platform_type": current_os
         }
     except Exception as e:
         return {"error": str(e)}

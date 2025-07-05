@@ -2,24 +2,37 @@
 ### Autonomous Distributed Cyber Defense Platform
 *Powered by AI, Machine Learning, and Real-time Threat Intelligence*
 
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://www.docker.com/)
+[![Python](https://img.shields.io/badge/Python-3.11+-green?logo=python)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Latest-red?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ---
 
 ## 🔍 Overview
 
 NeuroSentinel is a **next-generation cybersecurity platform** that provides **autonomous, intelligent, and distributed defense** for your **host machine**. The platform combines **machine learning**, **real-time monitoring**, **threat intelligence**, and **automated response mechanisms** to detect, analyze, and react to threats in real-time.
 
-> **Note:** NeuroSentinel is designed and configured to monitor and secure the **host system** (not just the container it runs in). All data collected is from the host machine.
+> **🎯 Key Point:** NeuroSentinel is designed and configured to monitor and secure the **host system** (not just the container it runs in). All data collected is from the host machine.
 
-### 🎯 Key Features
+## 🏗️ System Architecture
+
+![NeuroSentinel Architecture](diagram.svg)
+
+*NeuroSentinel's distributed architecture showing the relationship between agents, central server, ML core, threat intelligence APIs, and the web dashboard.*
+
+### 🌟 Key Features
 
 - **🔍 Real-time Host Monitoring**: Comprehensive data collection from system metrics, processes, network connections, and security events on the host
 - **🤖 ML-Powered Anomaly Detection**: Local machine learning models (Isolation Forest, AutoEncoder) for real-time threat detection
+- **🌐 Cross-Platform Support**: Works on Linux (full), macOS (good), and Windows (basic)
 - **🌐 Distributed Architecture**: Scalable agent-server architecture with containerized deployment
 - **⚡ Real-time Processing**: WebSocket and REST API support for live data streaming
 - **🛡️ Threat Intelligence**: Integration with external threat feeds and indicators
 - **🚨 Automated Response**: Configurable response actions based on detected threats
 - **📊 Web Dashboard**: Modern React-based interface for monitoring and analysis
 - **📈 Observability**: Prometheus metrics and comprehensive logging
+- **🔒 Host Security**: Privileged monitoring with read-only access to host system
 
 ---
 
@@ -32,7 +45,7 @@ NeuroSentinel is a **next-generation cybersecurity platform** that provides **au
 - **8GB+ RAM**: Recommended for running all services
 - **10GB+ Disk Space**: For containers, models, and data
 
-### Host Monitoring Mode (Recommended)
+### 🏠 Host Monitoring Mode (Required)
 
 To monitor and secure your **host machine**, the agent must be run with:
 - `privileged: true` (full access to host resources)
@@ -47,28 +60,28 @@ To monitor and secure your **host machine**, the agent must be run with:
 
 **Example agent service in `docker-compose.yml`:**
 ```yaml
-  agent:
-    build: ./agent
-    privileged: true
-    network_mode: host
-    volumes:
-      - /:/host:ro
-      - /var/run:/var/run:ro
-      - /proc:/proc:ro
-      - /sys:/sys:ro
-      - /var/log:/var/log:ro
-    depends_on:
-      - server
-    environment:
-      - SEND_MODE=websocket
-      - WS_URL=ws://localhost:8000/ws/events
-      - SNAPSHOT_WS_PORT=8080
-      - HOST_ROOT=/host
-    ports:
-      - "8080:8080"
+agent:
+  build: ./agent
+  privileged: true
+  network_mode: host
+  volumes:
+    - /:/host:ro
+    - /var/run:/var/run:ro
+    - /proc:/proc:ro
+    - /sys:/sys:ro
+    - /var/log:/var/log:ro
+  depends_on:
+    - server
+  environment:
+    - SEND_MODE=websocket
+    - WS_URL=ws://localhost:8000/ws/events
+    - SNAPSHOT_WS_PORT=8080
+    - HOST_ROOT=/host
+  ports:
+    - "8080:8080"
 ```
 
-### Installation & Setup
+### 📦 Installation & Setup
 
 1. **Clone the repository**
    ```bash
@@ -133,10 +146,11 @@ To confirm that the agent is monitoring your **host machine** (not just the cont
 
 ## 🔒 Security Note
 
-> **Warning:** Running the agent in privileged mode with host mounts gives it full read access to your host system. This is required for full host monitoring, but you should:
+> **⚠️ Warning:** Running the agent in privileged mode with host mounts gives it full read access to your host system. This is required for full host monitoring, but you should:
 > - Only run trusted code in this mode
 > - Review the agent's code and configuration
 > - Limit access to the agent container and its network
+> - Ensure your host system is properly secured
 
 ---
 
@@ -154,7 +168,7 @@ docker-compose ps
 docker-compose logs -f
 ```
 
-### Access Services
+### 🌐 Access Services
 
 | Service | URL | Description |
 |---------|-----|-------------|
@@ -166,7 +180,7 @@ docker-compose logs -f
 | **PostgreSQL** | localhost:5432 | Database |
 | **Redis** | localhost:6379 | Cache/Queue |
 
-### API Endpoints
+### 🔌 API Endpoints
 
 ```bash
 # Health check
@@ -188,7 +202,7 @@ curl http://localhost:9000/models
 
 ## 🛠️ Development Commands
 
-### Training ML Models
+### 🤖 Training ML Models
 ```bash
 # Train Isolation Forest
 make train-isolation-forest
@@ -203,7 +217,7 @@ make quick-train
 make test
 ```
 
-### Database Management
+### 🗄️ Database Management
 ```bash
 # Initialize database
 make db-init
@@ -218,7 +232,7 @@ make db-stats
 make db-reset
 ```
 
-### Development Utilities
+### 🔧 Development Utilities
 ```bash
 # View service status
 make status
@@ -267,7 +281,7 @@ docker-compose logs -f ml_core
 make logs
 ```
 
-### Metrics & Monitoring
+### 📈 Metrics & Monitoring
 - **Prometheus**: http://localhost:9090
 - **Application Metrics**: Available via `/metrics` endpoints
 - **Real-time Events**: WebSocket connections for live data
@@ -285,6 +299,7 @@ make logs
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   PostgreSQL    │    │      Redis       │    │   Prometheus    │
+│   (Database)    │    │   (Cache/Queue)  │    │   (Metrics)     │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
          │                       │                       │
          └───────────────────────┼───────────────────────┘
@@ -304,12 +319,12 @@ make logs
 NeuroSentinel/
 ├── agent/                 # Lightweight monitoring agent
 │   ├── collectors/        # Data collection modules
-│   │   ├── system.py      # System metrics collection
-│   │   ├── process.py     # Process monitoring
+│   │   ├── system.py      # System metrics collection (cross-platform)
+│   │   ├── process.py     # Process monitoring (cross-platform)
 │   │   ├── network.py     # Network connections
 │   │   ├── file.py        # File system monitoring
-│   │   ├── user.py        # User activity
-│   │   ├── logs.py        # Log file monitoring
+│   │   ├── user.py        # User activity (cross-platform)
+│   │   ├── logs.py        # Log file monitoring (cross-platform)
 │   │   ├── security_tools.py # Security tool integration
 │   │   └── snapshot.py    # System snapshot capture
 │   ├── agent.py          # Main agent daemon
@@ -338,7 +353,9 @@ NeuroSentinel/
 ├── shared/            # Shared utilities and schemas
 ├── nginx/             # Nginx configuration
 ├── docker-compose.yml # Service orchestration
-└── Makefile          # Development commands
+├── Makefile          # Development commands
+├── CROSS_PLATFORM.md # Cross-platform compatibility guide
+└── README.md         # This file
 ```
 
 ---
@@ -365,6 +382,7 @@ DATABASE_URL=postgresql://postgres:postgres@postgres:5432/neurosentinel
 SEND_MODE=websocket
 WS_URL=ws://server:8000/ws/events
 SNAPSHOT_WS_PORT=8080
+HOST_ROOT=/host
 
 # ML Core
 PYTHONUNBUFFERED=1
@@ -420,6 +438,9 @@ curl -X POST http://localhost:9000/predict \
 
 # Test WebSocket connection
 wscat -c ws://localhost:8000/ws/events
+
+# Test host monitoring
+docker exec neurosentinel-agent-1 python3 /app/test_host_monitoring.py
 ```
 
 ---
@@ -469,6 +490,15 @@ lsof -i :5173
 
 # Stop conflicting services
 sudo systemctl stop conflicting-service
+```
+
+**5. Host Monitoring Issues**
+```bash
+# Verify host monitoring is working
+docker exec neurosentinel-agent-1 python3 /app/test_host_monitoring.py
+
+# Check agent configuration
+docker-compose config agent
 ```
 
 ### Log Analysis
@@ -521,6 +551,17 @@ docker volume prune
 - **Machine Learning**: Scikit-learn, NumPy, Pandas
 - **Monitoring**: Prometheus, Docker
 - **DevOps**: Docker Compose, Make
+- **Cross-Platform**: Platform detection and OS-specific collectors
+
+## 🌐 Cross-Platform Support
+
+NeuroSentinel supports multiple operating systems with varying levels of functionality:
+
+- **Linux**: Full support with all features
+- **macOS**: Good support with most features
+- **Windows**: Basic support with limited features
+
+See [CROSS_PLATFORM.md](CROSS_PLATFORM.md) for detailed platform-specific information and configuration.
 
 ---
 
@@ -534,6 +575,8 @@ docker volume prune
 - [x] Database integration and persistence
 - [x] Real-time WebSocket communication
 - [x] System snapshot capabilities
+- [x] Host monitoring with privileged access
+- [x] Cross-platform compatibility
 
 ### Phase 2 – Enhanced Intelligence 🚧
 - [ ] Federated model sharing
@@ -571,11 +614,21 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+### Development Guidelines
+- Follow the existing code style
+- Add tests for new features
+- Update documentation
+- Test cross-platform compatibility
+
 ---
 
 ## 📞 Support
 
-For support, please open an issue on GitHub or contact the maintainer.
+For support, please:
+- Open an issue on GitHub
+- Check the [CROSS_PLATFORM.md](CROSS_PLATFORM.md) for platform-specific issues
+- Review the troubleshooting section above
+- Contact the maintainer
 
 ---
 
