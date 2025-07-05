@@ -1,0 +1,52 @@
+{
+  "experiment_name": "isolation_forest_experiment",
+  "start_time": "2025-07-05T16:23:12.719455",
+  "git_commit": "/bin/sh: 1: git: not found",
+  "git_branch": "/bin/sh: 1: git: not found",
+  "config": {
+    "model_type": "isolation_forest",
+    "params": {
+      "n_estimators": 100,
+      "contamination": 0.05,
+      "random_state": 42,
+      "max_samples": "auto",
+      "bootstrap": false
+    },
+    "training": {
+      "data_path": "/data/processed/training_data.json",
+      "validation_path": "/data/processed/validation_data.json",
+      "output_dir": "/app/models",
+      "model_name": "isolation_forest_v1"
+    },
+    "preprocessing": {
+      "feature_selection": true,
+      "scaling": "standard",
+      "handle_missing": "mean"
+    },
+    "evaluation": {
+      "metrics": [
+        "precision",
+        "recall",
+        "f1",
+        "roc_auc"
+      ],
+      "threshold_percentile": 95
+    },
+    "experiment": {
+      "description": "IsolationForest for system anomaly detection",
+      "tags": [
+        "anomaly_detection",
+        "system_monitoring",
+        "baseline"
+      ]
+    }
+  },
+  "data_info": {
+    "training_samples": 2,
+    "validation_samples": 2,
+    "training_data_path": "/data/processed/training_data.json",
+    "validation_data_path": "/data/processed/validation_data.json"
+  },
+  "python_version": "3.11.13 (main, Jul  1 2025, 10:33:40) [GCC 12.2.0]",
+  "platform": "linux"
+}
